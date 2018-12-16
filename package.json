@@ -1,0 +1,41 @@
+{
+  "name": "rhea-rpc",
+  "version": "0.0.1",
+  "description": "A promise based RPC server client communication on qpid using \\`rhea\\` amqp library over amqp 1.0 protocol",
+  "main": "./dist/index.js",
+  "types": "./typings/lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Pratik Gaikwad",
+  "license": "MIT",
+  "keywords": [
+    "amqp",
+    "amqp10",
+    "rhea",
+    "rpc",
+    "rhea-rpc",
+    "rhea rpc"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GaikwadPratik/rhea-rpc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GaikwadPratik/rhea-rpc/issues"
+  },
+  "homepage": "https://github.com/GaikwadPratik/rhea-rpc#readme",
+  "dependencies": {
+    "ajv": "^6.6.1",
+    "debug": "^4.1.0",
+    "rhea": "^0.3.5",
+    "tslib": "^1.9.3"
+  },
+  "devDependencies": {
+    "@types/debug": "0.0.31",
+    "@types/node": "^10.12.15",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^5.2.0"
+  }
+}
