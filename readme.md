@@ -11,3 +11,4 @@ TODO
 5. Configure options in `tsconfig.json`
 6. Add a generic promise based listener for topics and queues
 7. Return custom error object with codes
+8. Add null check on all the properties before utilizing
