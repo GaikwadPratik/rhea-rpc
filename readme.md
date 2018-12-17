@@ -10,3 +10,4 @@ TODO
 4. Add more test cases with exchange and topic
 5. Configure options in `tsconfig.json`
 6. Add a generic promise based listener for topics and queues
+7. Return custom error object with codes
