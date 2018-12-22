@@ -26,16 +26,16 @@
   },
   "homepage": "https://github.com/GaikwadPratik/rhea-rpc#readme",
   "dependencies": {
-    "ajv": "^6.6.1",
+    "ajv": "^6.6.2",
     "debug": "^4.1.0",
-    "rhea": "^0.3.5",
-    "tslib": "^1.9.3"
+    "rhea-promise": "^0.1.13"
   },
   "devDependencies": {
     "@types/debug": "0.0.31",
-    "@types/node": "^10.12.15",
+    "@types/node": "^10.12.18",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "mocha": "^5.2.0"
+    "mocha": "^5.2.0",
+    "tslib": "^1.9.3"
   }
 }

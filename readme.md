@@ -1,15 +1,13 @@
-A Promise based rpc server and client implementation for `rhea`, using json-schema for validation.
+A Promise based rpc server and client implementation for **rhea** and **rhea-promise**, using json-schema for validation.
 
-This repo is based on works of [https://github.com/mbroadst/amqp10-rpc.git]. 
+This repo is replacement for [amqp10-rpc](https://github.com/mbroadst/amqp10-rpc.git) for `rhea` and `rhea-promise`. 
 
 
 TODO
-1. Add JSON schema validation(using AJV) for server bound functions when they are called
-2. Add documentation in each file
-3. Correct type definitions and export defaults for this library
-4. Add more test cases with exchange and topic
-5. Configure options in `tsconfig.json`
-6. Add a generic promise based listener for topics and queues
-7. Return custom error object with codes
-8. Add null check on all the properties before utilizing
-9. Add logging
+ [ ] Add JSON schema validation(using AJV) for server bound functions when they are called
+ [ ] Add documentation in each file
+ [ ] Correct type definitions and export defaults for this library
+ [ ] Configure options in `tsconfig.json`
+ [ ] Return custom error object with codes
+ [ ] Add null check on all the properties before utilizing
+ [ ] Add logging

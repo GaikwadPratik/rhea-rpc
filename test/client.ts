@@ -1,12 +1,12 @@
 import { RheaRpc } from "../index";
-import { ConnectionOptions } from 'rhea';
+import { ConnectionOptions } from 'rhea-promise';
 
 async function Main() {
     let _client = new RheaRpc();
     let _connectionOptions: ConnectionOptions = {
-        host: '192.168.122.4',
-        username: 'system',
-        password: 'manager'
+        host: '',
+        username: '',
+        password: ''
     };
     _client = await _client.createAmqpClient(_connectionOptions);
     let _rpcClient  = await _client.createRpcClient('rpc');

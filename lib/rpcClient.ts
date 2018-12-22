@@ -1,4 +1,4 @@
-import { Connection, EventContext, Receiver, Sender, generate_uuid, Message } from "rhea";
+import { Connection, EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptions, ReceiverOptions, SenderEvents } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode } from "./util/common";
 
 interface PendingRequest {
@@ -35,7 +35,7 @@ export class RpcClient {
 
     private async _sendRequest(request: PendingRequest) {
         let _message: Message = {
-            reply_to: (this._receiver as any).remote.attach.source.address,
+            reply_to: this._receiver.address,
             body: {
                 args: request.args,
                 type: request.type
@@ -91,7 +91,7 @@ export class RpcClient {
     }
 
     public async call(functionName: string, ...args: Array<any>) {
-        if (this._receiver.is_open()) {
+        if (this._receiver.isOpen()) {
             return this._sendRequest({id: generate_uuid(), name: functionName, args, type: RpcRequestType.Call});
         } else {
             throw new Error('Receiver is not yet open');
@@ -99,20 +99,29 @@ export class RpcClient {
     }
 
     public async connect() {
-        this._sender = this._connection.attach_sender(this._amqpNode);
-        this._receiver = this._connection.attach_receiver({ source: { dynamic: true, address: '' }});
-        this._receiver.on('message', this._processResponse.bind(this));
-        return new Promise((resolve, reject) => {
-            try {
-                this._receiver.on('receiver_open', resolve);
-            } catch(error) {
-                reject(error);
+        const _senderOptions: SenderOptions = {
+            target: this._amqpNode
+        };
+        const _receiverOptions: ReceiverOptions = { 
+            source: { 
+                dynamic: true, 
+                address: this._amqpNode 
             }
+        };
+
+        this._sender = await this._connection.createSender(_senderOptions);
+        this._receiver = await this._connection.createReceiver(_receiverOptions);
+        this._receiver.on(ReceiverEvents.message, this._processResponse.bind(this));
+        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
+            throw context.error;
+        });
+        this._sender.on(SenderEvents.senderError, (context: EventContext) => {
+            throw context.error;
         });
     }
 
     public async disconnect() {
-        this._sender.close();
-        this._receiver.close();
+        await this._sender.close();
+        await this._receiver.close();
     }
 }

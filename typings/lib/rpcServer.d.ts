@@ -1,4 +1,4 @@
-import { Connection } from "rhea";
+import { Connection } from "rhea-promise";
 import { ServerFunctionDefinition } from "./util/common";
 export declare class RpcServer {
     private _connection;
@@ -13,6 +13,6 @@ export declare class RpcServer {
      * Extract parameter names from a function
      */
     bind(functionDefintion: ServerFunctionDefinition, callback: Function): void;
-    connect(): Promise<{}>;
+    connect(): Promise<void>;
     disconnect(): Promise<void>;
 }

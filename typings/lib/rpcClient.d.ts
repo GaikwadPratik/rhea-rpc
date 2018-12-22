@@ -1,4 +1,4 @@
-import { Connection } from "rhea";
+import { Connection } from "rhea-promise";
 import { MessageOptions } from "./util/common";
 export declare class RpcClient {
     private _connection;
@@ -11,6 +11,6 @@ export declare class RpcClient {
     private _sendRequest;
     private _processResponse;
     call(functionName: string, ...args: Array<any>): Promise<{}>;
-    connect(): Promise<{}>;
+    connect(): Promise<void>;
     disconnect(): Promise<void>;
 }

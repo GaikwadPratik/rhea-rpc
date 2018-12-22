@@ -1,22 +1,19 @@
-import { Container, Connection, ConnectionOptions, create_container } from "rhea";
+import { Connection, ConnectionOptions } from "rhea-promise";
 import { RpcClient } from "./lib/rpcClient";
 import { RpcServer } from "./lib/rpcServer";
 import { MessageOptions } from "./lib/util/common";
 
 export class RheaRpc {
-    private _container: Container | null = null;
     private _connection: Connection | null = null;
+
+    public get Connection(): Connection  {
+        return this._connection!;
+    }
     
-    public async createAmqpClient(connectionOptions: ConnectionOptions) {
-        this._container = create_container();
-        this._connection = this._container.connect(connectionOptions);
-        return <Promise<RheaRpc>> new Promise((resolve, reject) => {
-            try {
-                this._connection!.on('connection_open', () => resolve(this));
-            } catch(error) {
-                reject(error);
-            }
-        });
+    public async createAmqpClient(connectionOptions: ConnectionOptions): Promise<RheaRpc> {
+        this._connection = new Connection(connectionOptions);
+        await this._connection.open();
+        return this;
     }
 
     public async createRpcClient(amqpNode: string, options?: MessageOptions): Promise<RpcClient> {

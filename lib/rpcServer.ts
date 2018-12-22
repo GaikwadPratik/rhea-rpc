@@ -1,4 +1,4 @@
-import { Connection, EventContext, Receiver, Sender, Message } from "rhea";
+import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode } from "./util/common";
 //import Ajv from "ajv";
 
@@ -112,16 +112,27 @@ export class RpcServer {
     }
 
     public async connect() {
-        this._receiver = this._connection.attach_receiver({ source: { address: this._amqpNode } });;
-        this._sender = this._connection.attach_sender({target:{}});
-        this._receiver.on('message', this._processRequest.bind(this));
-        return new Promise((resolve) => {
-            this._receiver.on('receiver_open', resolve);
+        const _receiverOptions: ReceiverOptions = {
+            source: {
+                address: this._amqpNode
+            }
+        };
+        const _senderOptions: SenderOptions = {
+            target: {}
+        };
+        this._receiver = await this._connection.createReceiver(_receiverOptions);;
+        this._sender = await this._connection.createSender(_senderOptions);
+        this._receiver.on(ReceiverEvents.message, this._processRequest.bind(this));
+        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
+            throw context.error;
+        });
+        this._sender.on(SenderEvents.senderError, (context: EventContext) => {
+            throw context.error;
         });
     }
 
     public async disconnect() {
-        this._sender.close();
-        this._receiver.close();
+        await this._sender.close();
+        await this._receiver.close();
     }
 }
