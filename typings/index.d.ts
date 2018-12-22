@@ -10,7 +10,7 @@ export declare interface ServerFunctionDefinition {
 
 export declare class RpcServer {
     constructor(amqpNode: string, connection: Connection);
-    bind(functionDefintion: ServerFunctionDefinition, callback: Function);
+    bind(functionDefintion: ServerFunctionDefinition, callback: Function): void;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
 }
