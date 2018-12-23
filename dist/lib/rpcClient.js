@@ -85,7 +85,7 @@ class RpcClient {
     }
     async notify(functionName, ...args) {
         if (this._sender.isOpen()) {
-            this._sendRequest({ id: rhea_promise_1.generate_uuid(), name: functionName, args, type: common_1.RpcRequestType.Notify });
+            await this._sendRequest({ id: rhea_promise_1.generate_uuid(), name: functionName, args, type: common_1.RpcRequestType.Notify });
         }
         else {
             throw new Error('Sender is not open');
