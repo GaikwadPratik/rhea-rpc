@@ -16,9 +16,10 @@ async function Main() {
             type: 'object',
             properties: {
                 arg: { type: 'string' }
-            }
+            },
+            required: [ 'arg' ]
         }
-    }, async (arg: any) => {
+    }, async (arg: string) => {
         console.log(`Received input at Server ${arg}`);
         return {'Test': `Hi ${arg}`};
     });
