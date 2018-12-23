@@ -21,6 +21,7 @@ export declare class RpcClient {
     call(functionName: string, ...args: any): Promise<{}>;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
+    notify(functionName: string, ...args: any): Promise<void>;
 }
 
 export declare interface MessageOptions {

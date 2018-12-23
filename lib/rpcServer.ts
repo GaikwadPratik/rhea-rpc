@@ -46,7 +46,7 @@ export class RpcServer {
             try {
                 _reqMessage.body = JSON.parse(_reqMessage.body);
             } catch (error) {
-                return await this._sendResponse(_replyTo, _correlationId as string, error, _correlationId !== '' ? RpcRequestType.Call : RpcRequestType.Notify);
+                return await this._sendResponse(_replyTo, _correlationId as string, error, _replyTo !== '' ? RpcRequestType.Call : RpcRequestType.Notify);
             }
         }
 

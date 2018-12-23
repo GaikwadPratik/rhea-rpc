@@ -11,4 +11,4 @@ TODO
 - [x] Return custom error object with codes
 - [ ] Add null check on all the properties before utilizing
 - [ ] Add logging
-- [ ] Add `notify` in `RpcClient`
+- [x] Add `notify` in `RpcClient`

@@ -36,18 +36,18 @@ export class RpcClient {
 
     private async _sendRequest(request: PendingRequest) {
         const _message: Message = {
-            reply_to: this._receiver.address,
+            reply_to: request.type === RpcRequestType.Call ? this._receiver.address : '',
             body: {
                 args: request.args,
                 type: request.type
             },
             subject: request.name,
             message_id: request.id,
-            correlation_id: request.type === RpcRequestType.Call ? request.id : '',
+            correlation_id: request.id,
             ttl: this._messageOptions.timeout
         }
-        return new Promise((resolve, reject) => {
-            if (request.type === RpcRequestType.Call) {
+        if (request.type === RpcRequestType.Call) {
+            return new Promise((resolve, reject) => {
                 this._requestPendingResponse[request.id] =  {
                     timeout: setTimeout(() => {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
@@ -57,9 +57,12 @@ export class RpcClient {
                     }, this._messageOptions.timeout),
                     response: {resolve, reject}
                 }
-            }
+                this._sender.send(_message);
+            });
+        } else {
             this._sender.send(_message);
-        });
+            return;
+        }
     }
 
     private async _processResponse(context: EventContext) {
@@ -96,6 +99,14 @@ export class RpcClient {
             return this._sendRequest({id: generate_uuid(), name: functionName, args, type: RpcRequestType.Call});
         } else {
             throw new Error('Receiver or Sender is not yet open');
+        }
+    }
+
+    public async notify(functionName: string, ...args: any) {
+        if (this._sender.isOpen()) {
+            this._sendRequest({id: generate_uuid(), name: functionName, args, type: RpcRequestType.Notify});
+        } else {
+            throw new Error('Sender is not open');
         }
     }
 

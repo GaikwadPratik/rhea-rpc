@@ -10,14 +10,14 @@ async function Main() {
     };
     _client = await _client.createAmqpClient(_connectionOptions);
     let _rpcClient  = await _client.createRpcClient('rpc');
-    return await _rpcClient.call('test', 'Pratik');
+    return await _rpcClient.notify('test', 'Pratik');
 }
 
 Main()
     .then((c) => {
         console.log('Client Connected');
         console.log(c);
-        process.exit(0);
+        setTimeout(() => process.exit(0), 1);
     })
     .catch(err => {
         console.error(err);
