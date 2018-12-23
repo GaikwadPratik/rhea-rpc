@@ -38,7 +38,7 @@ class RpcServer {
                 _reqMessage.body = JSON.parse(_reqMessage.body);
             }
             catch (error) {
-                return await this._sendResponse(_replyTo, _correlationId, error, _correlationId !== '' ? common_1.RpcRequestType.Call : common_1.RpcRequestType.Notify);
+                return await this._sendResponse(_replyTo, _correlationId, error, _replyTo !== '' ? common_1.RpcRequestType.Call : common_1.RpcRequestType.Notify);
             }
         }
         if (!this._serverFunctions.hasOwnProperty(_reqMessage.subject)) {
