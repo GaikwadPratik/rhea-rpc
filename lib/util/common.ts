@@ -20,3 +20,17 @@ export interface ServerFunctionDefinition {
         required?: Array<string>
     }
 }
+
+export enum ErrorCodes {
+    RequestTimeOut = 'RequestTimeOut',
+    EmptyResponse = 'EmptyResponse',
+    EmptyResponseBody = 'EmptyResponseBody',
+    MissingFunctionDefinition = 'MissingFunctionDefinition',
+    MissingFunctionName = 'MissingFunctionName',
+    DuplicateFunctionDefinition = 'DuplicateFunctionDefinition',
+    ParamsNotObject = 'ParamsNotObject',
+    ParamsMissingProperties = 'ParamsMissingProperties',
+    UnknownParameter = 'UnknownParameter',
+    UnknownFunction = 'UnknownFunction',
+    FunctionDefinitionValidationError = 'FunctionDefinitionValidationError'
+}

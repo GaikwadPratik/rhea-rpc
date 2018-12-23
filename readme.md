@@ -8,6 +8,7 @@ TODO
 - [ ] Add documentation in each file
 - [x] Correct type definitions and export defaults for this library
 - [ ] Configure options in `tsconfig.json`
-- [ ] Return custom error object with codes
+- [x] Return custom error object with codes
 - [ ] Add null check on all the properties before utilizing
 - [ ] Add logging
+- [ ] Add `notify` in `RpcClient`
