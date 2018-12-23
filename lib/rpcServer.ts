@@ -1,6 +1,7 @@
 import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode } from "./util/common";
 import Ajv from "ajv";
+import { UnknownFunctionError, FunctionDefinitionValidationError, MissingFunctionDefinitionError, MissingFunctionNameError, DuplicateFunctionDefinitionError, ParamsNotObjectError, ParamsMissingPropertiesError, UnknowParameterError } from './util/errors';
 
 export class RpcServer {
     private _connection: Connection;
@@ -15,8 +16,8 @@ export class RpcServer {
         }
     } = {};
     private _ajv: Ajv.Ajv;
-    private STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-    private ARGUMENT_NAMES = /([^\s,]+)/g;
+    private readonly STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+    private readonly ARGUMENT_NAMES = /([^\s,]+)/g;
 
     constructor(amqpNode: string, connection: Connection) {
         this._amqpNode = amqpNode;
@@ -33,12 +34,12 @@ export class RpcServer {
     }
 
     private async _processRequest(context: EventContext) {
-        let _reqMessage: Message = context.message!;
+        const _reqMessage: Message = context.message!;
         if (!_reqMessage.hasOwnProperty('subject') || !_reqMessage.hasOwnProperty('body')) {
             context.delivery!.release({undeliverable_here: true});
             return;
         }
-        let _replyTo = _reqMessage.reply_to!,
+        const _replyTo = _reqMessage.reply_to!,
             _correlationId = _reqMessage.correlation_id!;
 
         if(typeof _reqMessage.body === 'string') {
@@ -50,11 +51,11 @@ export class RpcServer {
         }
 
         if(!this._serverFunctions.hasOwnProperty(_reqMessage.subject!)) {
-            return await this._sendResponse(_replyTo, _correlationId as string, new Error(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
+            return await this._sendResponse(_replyTo, _correlationId as string, new UnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
         }
 
-        let funcCall = this._serverFunctions[_reqMessage.subject!],
-            params = _reqMessage.body.args;
+        const funcCall = this._serverFunctions[_reqMessage.subject!];
+        let params = _reqMessage.body.args;
         
         if (Array.isArray(params) && params.length > 0) { // convert to named parameters
             params = funcCall.arguments.reduce(function(obj: any, p: any, idx: any) {
@@ -64,17 +65,17 @@ export class RpcServer {
         }
 
         if (!!funcCall.validate && typeof funcCall.validate === 'function') {
-            var valid = funcCall.validate(params);
+            const valid = funcCall.validate(params);
             if (!valid) {
-                let _err = new Error(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
+                let _err = new FunctionDefinitionValidationError(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
                 return await this._sendResponse(_replyTo, _correlationId as string, _err, _reqMessage.body.type);
             }
         }
 
-        var args = funcCall.arguments.map(function(p: any) { return params[p]; });
+        const args = funcCall.arguments.map(function(p: any) { return params[p]; });
 
         try {
-            let _response = await funcCall.callback.apply(null, args);
+            const _response = await funcCall.callback.apply(null, args);
             return await this._sendResponse(_replyTo, _correlationId as string, _response, _reqMessage.body.type);
         } catch (error) {
             return await this._sendResponse(_replyTo, _correlationId as string, error, _reqMessage.body.type);
@@ -88,7 +89,7 @@ export class RpcServer {
                 _isError = true;
                 msg = JSON.stringify(msg, Object.getOwnPropertyNames(msg))
             }
-            let _resMessage: Message = {
+            const _resMessage: Message = {
                 to: replyTo,
                 correlation_id: correlationId,
                 body: msg,
@@ -102,8 +103,8 @@ export class RpcServer {
      * Extract parameter names from a function
      */
     private extractParameterNames(func: Function) {
-        var fnStr = func.toString().replace(this.STRIP_COMMENTS, '');
-        var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(this.ARGUMENT_NAMES);
+        const fnStr = func.toString().replace(this.STRIP_COMMENTS, '');
+        const result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(this.ARGUMENT_NAMES);
         if (result === null) return [];
         return result;
     }
@@ -114,15 +115,15 @@ export class RpcServer {
 
     public bind(functionDefintion: ServerFunctionDefinition, callback: Function) {
         if (typeof functionDefintion === 'undefined' || functionDefintion === null) {
-            throw new Error('Function definition missing');
+            throw new MissingFunctionDefinitionError('Function definition missing');
         }
 
         if (!functionDefintion.hasOwnProperty('name')) {
-            throw new Error('Function name is missing from definition');
+            throw new MissingFunctionNameError('Function name is missing from definition');
         }
 
         if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
-            throw new Error('Duplicate method being bound to RPC server');
+            throw new DuplicateFunctionDefinitionError('Duplicate method being bound to RPC server');
         }
 
         let _funcDefParams = null,
@@ -137,18 +138,18 @@ export class RpcServer {
 
         if (!!_funcDefParams) {
             if (!this._isPlainObject(_funcDefParams)) {
-              throw new Error('not a plain object');
+              throw new ParamsNotObjectError('not a plain object');
             }
         
             if (!_funcDefParams.hasOwnProperty('properties')) {
-              throw new Error('missing `properties`');
+              throw new ParamsMissingPropertiesError('missing `properties`');
             }
         
             // do a basic check to see if we know about all named parameters
             Object.keys(_funcDefParams.properties).map(function(p) {
-              var idx = _funcDefinedParams!.indexOf(p);
+              const idx = _funcDefinedParams!.indexOf(p);
               if (idx === -1)
-                throw new Error(`unknown parameter:  ${p}`);
+                throw new UnknowParameterError(`unknown parameter:  ${p}`);
             });
         
             _validate = this._ajv.compile(_funcDefParams);

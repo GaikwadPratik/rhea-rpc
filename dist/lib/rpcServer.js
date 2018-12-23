@@ -4,6 +4,7 @@ const tslib_1 = require("tslib");
 const rhea_promise_1 = require("rhea-promise");
 const common_1 = require("./util/common");
 const ajv_1 = tslib_1.__importDefault(require("ajv"));
+const errors_1 = require("./util/errors");
 class RpcServer {
     constructor(amqpNode, connection) {
         this._amqpNode = '';
@@ -26,12 +27,12 @@ class RpcServer {
         });
     }
     async _processRequest(context) {
-        let _reqMessage = context.message;
+        const _reqMessage = context.message;
         if (!_reqMessage.hasOwnProperty('subject') || !_reqMessage.hasOwnProperty('body')) {
             context.delivery.release({ undeliverable_here: true });
             return;
         }
-        let _replyTo = _reqMessage.reply_to, _correlationId = _reqMessage.correlation_id;
+        const _replyTo = _reqMessage.reply_to, _correlationId = _reqMessage.correlation_id;
         if (typeof _reqMessage.body === 'string') {
             try {
                 _reqMessage.body = JSON.parse(_reqMessage.body);
@@ -41,9 +42,10 @@ class RpcServer {
             }
         }
         if (!this._serverFunctions.hasOwnProperty(_reqMessage.subject)) {
-            return await this._sendResponse(_replyTo, _correlationId, new Error(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
+            return await this._sendResponse(_replyTo, _correlationId, new errors_1.UnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
         }
-        let funcCall = this._serverFunctions[_reqMessage.subject], params = _reqMessage.body.args;
+        const funcCall = this._serverFunctions[_reqMessage.subject];
+        let params = _reqMessage.body.args;
         if (Array.isArray(params) && params.length > 0) { // convert to named parameters
             params = funcCall.arguments.reduce(function (obj, p, idx) {
                 obj[p] = idx > params.length ? null : params[idx];
@@ -51,15 +53,15 @@ class RpcServer {
             }, {});
         }
         if (!!funcCall.validate && typeof funcCall.validate === 'function') {
-            var valid = funcCall.validate(params);
+            const valid = funcCall.validate(params);
             if (!valid) {
-                let _err = new Error(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
+                let _err = new errors_1.FunctionDefinitionValidationError(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
                 return await this._sendResponse(_replyTo, _correlationId, _err, _reqMessage.body.type);
             }
         }
-        var args = funcCall.arguments.map(function (p) { return params[p]; });
+        const args = funcCall.arguments.map(function (p) { return params[p]; });
         try {
-            let _response = await funcCall.callback.apply(null, args);
+            const _response = await funcCall.callback.apply(null, args);
             return await this._sendResponse(_replyTo, _correlationId, _response, _reqMessage.body.type);
         }
         catch (error) {
@@ -73,7 +75,7 @@ class RpcServer {
                 _isError = true;
                 msg = JSON.stringify(msg, Object.getOwnPropertyNames(msg));
             }
-            let _resMessage = {
+            const _resMessage = {
                 to: replyTo,
                 correlation_id: correlationId,
                 body: msg,
@@ -86,21 +88,21 @@ class RpcServer {
      * Extract parameter names from a function
      */
     extractParameterNames(func) {
-        var fnStr = func.toString().replace(this.STRIP_COMMENTS, '');
-        var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(this.ARGUMENT_NAMES);
+        const fnStr = func.toString().replace(this.STRIP_COMMENTS, '');
+        const result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(this.ARGUMENT_NAMES);
         if (result === null)
             return [];
         return result;
     }
     bind(functionDefintion, callback) {
         if (typeof functionDefintion === 'undefined' || functionDefintion === null) {
-            throw new Error('Function definition missing');
+            throw new errors_1.MissingFunctionDefinitionError('Function definition missing');
         }
         if (!functionDefintion.hasOwnProperty('name')) {
-            throw new Error('Function name is missing from definition');
+            throw new errors_1.MissingFunctionNameError('Function name is missing from definition');
         }
         if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
-            throw new Error('Duplicate method being bound to RPC server');
+            throw new errors_1.DuplicateFunctionDefinitionError('Duplicate method being bound to RPC server');
         }
         let _funcDefParams = null, _funcDefinedParams = null, _validate = null;
         if (functionDefintion.hasOwnProperty('params')) {
@@ -109,16 +111,16 @@ class RpcServer {
         _funcDefinedParams = this.extractParameterNames(callback);
         if (!!_funcDefParams) {
             if (!this._isPlainObject(_funcDefParams)) {
-                throw new Error('not a plain object');
+                throw new errors_1.ParamsNotObjectError('not a plain object');
             }
             if (!_funcDefParams.hasOwnProperty('properties')) {
-                throw new Error('missing `properties`');
+                throw new errors_1.ParamsMissingPropertiesError('missing `properties`');
             }
             // do a basic check to see if we know about all named parameters
             Object.keys(_funcDefParams.properties).map(function (p) {
-                var idx = _funcDefinedParams.indexOf(p);
+                const idx = _funcDefinedParams.indexOf(p);
                 if (idx === -1)
-                    throw new Error(`unknown parameter:  ${p}`);
+                    throw new errors_1.UnknowParameterError(`unknown parameter:  ${p}`);
             });
             _validate = this._ajv.compile(_funcDefParams);
         }

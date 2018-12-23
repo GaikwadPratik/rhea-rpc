@@ -1,5 +1,6 @@
 import { Connection, EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptions, ReceiverOptions, SenderEvents } from "rhea-promise";
-import { MessageOptions, RpcRequestType, RpcResponseCode } from "./util/common";
+import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
+import { RequestTimeoutError, RpcResponseError } from './util/errors';
 
 interface PendingRequest {
     id: string,
@@ -34,7 +35,7 @@ export class RpcClient {
     }
 
     private async _sendRequest(request: PendingRequest) {
-        let _message: Message = {
+        const _message: Message = {
             reply_to: this._receiver.address,
             body: {
                 args: request.args,
@@ -51,7 +52,7 @@ export class RpcClient {
                     timeout: setTimeout(() => {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
                             delete this._requestPendingResponse[request.id];
-                            throw new Error('Request timed out');
+                            throw new RequestTimeoutError();
                         }
                     }, this._messageOptions.timeout),
                     response: {resolve, reject}
@@ -63,26 +64,26 @@ export class RpcClient {
 
     private async _processResponse(context: EventContext) {
         if (typeof context === 'undefined' || context === null) {
-            throw new Error('Empty response received from RPC server');
+            throw new RpcResponseError('Empty response received from RPC server', ErrorCodes.EmptyResponse);
           }
       
           if (typeof context.message === 'undefined' || context.message === null) {
-            throw new Error('Empty message body received from RPC server');
+            throw new RpcResponseError('Empty message body received from RPC server', ErrorCodes.EmptyResponseBody);
           }
       
-          let id = context.message!.correlation_id as string;
-          let callback = this._requestPendingResponse[id].response;
+          const id = context.message!.correlation_id as string;
+          const callback = this._requestPendingResponse[id].response;
           delete this._requestPendingResponse[id];
           if (typeof callback) {
             if (context.message!.subject === RpcResponseCode.OK) {
               return callback.resolve(context.message!.body);
-            } else {
-                let _receivedError = JSON.parse(context.message!.body);
-                let _err = new Error(_receivedError.message);
+            } else if (context.message!.subject === RpcResponseCode.ERROR) {
+                const _receivedError = typeof context.message.body === 'string' ? JSON.parse(context.message.body) : context.message.body;
+                const _err = new Error(_receivedError.message);
                 _err.stack = _receivedError.stack;
-                // if (_receivedError.hasOwnProperty('code')) {
-                //     _err["code"] = _receivedError.code;
-                // }
+                if (_receivedError.hasOwnProperty('code')) {
+                    (_err as any).code = _receivedError.code;
+                }
                 return callback.reject(_err);
             }
           } else {
@@ -91,10 +92,10 @@ export class RpcClient {
     }
 
     public async call(functionName: string, ...args: any) {
-        if (this._receiver.isOpen()) {
+        if (this._receiver.isOpen() && this._sender.isOpen()) {
             return this._sendRequest({id: generate_uuid(), name: functionName, args, type: RpcRequestType.Call});
         } else {
-            throw new Error('Receiver is not yet open');
+            throw new Error('Receiver or Sender is not yet open');
         }
     }
 
