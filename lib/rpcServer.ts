@@ -1,7 +1,7 @@
 import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode } from "./util/common";
 import Ajv from "ajv";
-import { UnknownFunctionError, FunctionDefinitionValidationError, MissingFunctionDefinitionError, MissingFunctionNameError, DuplicateFunctionDefinitionError, ParamsNotObjectError, ParamsMissingPropertiesError, UnknowParameterError } from './util/Errors';
+import { UnknownFunctionError, FunctionDefinitionValidationError, MissingFunctionDefinitionError, MissingFunctionNameError, DuplicateFunctionDefinitionError, ParamsNotObjectError, ParamsMissingPropertiesError, UnknowParameterError } from './util/errors';
 
 export class RpcServer {
     private _connection: Connection;

@@ -1,6 +1,6 @@
 import { Connection, EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptions, ReceiverOptions, SenderEvents } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
-import { RequestTimeoutError, RpcResponseError } from './util/Errors';
+import { RequestTimeoutError, RpcResponseError } from './util/errors';
 
 interface PendingRequest {
     id: string,

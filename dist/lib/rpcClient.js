@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const rhea_promise_1 = require("rhea-promise");
 const common_1 = require("./util/common");
-const Errors_1 = require("./util/Errors");
+const errors_1 = require("./util/errors");
 class RpcClient {
     constructor(amqpNode, connection, options) {
         this._amqpNode = '';
@@ -34,7 +34,7 @@ class RpcClient {
                     timeout: setTimeout(() => {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
                             delete this._requestPendingResponse[request.id];
-                            throw new Errors_1.RequestTimeoutError();
+                            throw new errors_1.RequestTimeoutError();
                         }
                     }, this._messageOptions.timeout),
                     response: { resolve, reject }
@@ -45,10 +45,10 @@ class RpcClient {
     }
     async _processResponse(context) {
         if (typeof context === 'undefined' || context === null) {
-            throw new Errors_1.RpcResponseError('Empty response received from RPC server', common_1.ErrorCodes.EmptyResponse);
+            throw new errors_1.RpcResponseError('Empty response received from RPC server', common_1.ErrorCodes.EmptyResponse);
         }
         if (typeof context.message === 'undefined' || context.message === null) {
-            throw new Errors_1.RpcResponseError('Empty message body received from RPC server', common_1.ErrorCodes.EmptyResponseBody);
+            throw new errors_1.RpcResponseError('Empty message body received from RPC server', common_1.ErrorCodes.EmptyResponseBody);
         }
         const id = context.message.correlation_id;
         const callback = this._requestPendingResponse[id].response;
@@ -60,10 +60,10 @@ class RpcClient {
             else if (context.message.subject === common_1.RpcResponseCode.ERROR) {
                 const _receivedError = typeof context.message.body === 'string' ? JSON.parse(context.message.body) : context.message.body;
                 const _err = new Error(_receivedError.message);
+                _err.stack = _receivedError.stack;
                 if (_receivedError.hasOwnProperty('code')) {
                     _err.code = _receivedError.code;
                 }
-                _err.stack = _receivedError.stack;
                 return callback.reject(_err);
             }
         }
