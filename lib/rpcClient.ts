@@ -52,8 +52,8 @@ export class RpcClient {
                     timeout: setTimeout(() => {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
                             delete this._requestPendingResponse[request.id];
-                            throw new RequestTimeoutError();
                         }
+                        return reject(new RequestTimeoutError(`Request timed out while executing: '${request.name}'`));
                     }, this._messageOptions.timeout),
                     response: {resolve, reject}
                 }
