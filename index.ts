@@ -5,14 +5,16 @@ import { MessageOptions } from "./lib/util/common";
 
 export class RheaRpc {
     private _connection: Connection | null = null;
-
-    public get Connection(): Connection  {
-        return this._connection!;
-    }
     
-    public async createAmqpClient(connectionOptions: ConnectionOptions): Promise<RheaRpc> {
-        this._connection = new Connection(connectionOptions);
-        await this._connection.open();
+    public async createAmqpClient(connectionOptions?: ConnectionOptions, connection?: Connection): Promise<RheaRpc> {
+        if (typeof connection !== 'undefined' && connection !== null) {
+            this._connection = connection;
+        } else {
+            this._connection = new Connection(connectionOptions);
+        }
+        if (!this._connection.isOpen()) {
+            await this._connection.open();
+        }
         return this;
     }
 

@@ -90,7 +90,7 @@ export class RpcClient {
           }
     }
 
-    public async call(functionName: string, ...args: Array<any>) {
+    public async call(functionName: string, ...args: any) {
         if (this._receiver.isOpen()) {
             return this._sendRequest({id: generate_uuid(), name: functionName, args, type: RpcRequestType.Call});
         } else {

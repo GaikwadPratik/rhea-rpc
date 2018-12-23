@@ -4,7 +4,8 @@ export declare interface ServerFunctionDefinition {
     name: string,
     params?: {
         type: string,
-        properties: any
+        properties: any,
+        required?: Array<string>
     }
 }
 
@@ -17,7 +18,7 @@ export declare class RpcServer {
 
 export declare class RpcClient {
     constructor(amqpNode:string, connection: Connection, options?: MessageOptions);
-    call(functionName: string, ...args: Array<any>): Promise<{}>;
+    call(functionName: string, ...args: any): Promise<{}>;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
 }
@@ -27,7 +28,7 @@ export declare interface MessageOptions {
 }
 
 export declare class RheaRpc {
-    createAmqpClient(connectionOptions: ConnectionOptions): Promise<RheaRpc>;
+    createAmqpClient(connectionOptions: ConnectionOptions, connection?: Connection): Promise<RheaRpc>;
     createRpcClient(amqpNode: string, options?: MessageOptions): Promise<RpcClient>;
     createRpcServer(amqpNode: string): Promise<RpcServer>;
 }

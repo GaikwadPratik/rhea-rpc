@@ -16,6 +16,7 @@ export interface ServerFunctionDefinition {
     name: string,
     params?: {
         type: string,
-        properties: any
+        properties: any,
+        required?: Array<string>
     }
 }

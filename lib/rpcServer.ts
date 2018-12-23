@@ -1,6 +1,6 @@
 import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode } from "./util/common";
-//import Ajv from "ajv";
+import Ajv from "ajv";
 
 export class RpcServer {
     private _connection: Connection;
@@ -8,22 +8,28 @@ export class RpcServer {
     private _receiver!: Receiver;
     private _amqpNode: string = '';
     private _serverFunctions: {
-        [name:string]: Function
+        [name:string]: {
+            callback: Function,
+            validate: Ajv.ValidateFunction,
+            arguments: any
+        }
     } = {};
-    //private _ajv: Ajv.Ajv;
-    // private STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-    // private ARGUMENT_NAMES = /([^\s,]+)/g;
+    private _ajv: Ajv.Ajv;
+    private STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+    private ARGUMENT_NAMES = /([^\s,]+)/g;
 
     constructor(amqpNode: string, connection: Connection) {
         this._amqpNode = amqpNode;
         this._connection = connection;
-        // this._ajv = new Ajv({
-        //     schemaId: 'auto',
-        //     allErrors: true,
-        //     coerceTypes: true,
-        //     removeAdditional: true,
-        //     ownProperties: true
-        // });
+        this._ajv = new Ajv({
+            schemaId: 'auto',
+            allErrors: true,
+            coerceTypes: false,
+            removeAdditional: true,
+            ownProperties: true,
+            validateSchema: true,
+            useDefaults: false
+        });
     }
 
     private async _processRequest(context: EventContext) {
@@ -50,14 +56,25 @@ export class RpcServer {
         let funcCall = this._serverFunctions[_reqMessage.subject!],
             params = _reqMessage.body.args;
         
-        // if (Array.isArray(params)) { // convert to named parameters
-        //     params = funcCall.arguments.reduce(function(obj: any, p: any, idx: any) {
-        //         obj[p] = idx > params.length ? null : params[idx];
-        //         return obj;
-        //     }, {});
-        // }
+        if (Array.isArray(params) && params.length > 0) { // convert to named parameters
+            params = funcCall.arguments.reduce(function(obj: any, p: any, idx: any) {
+                obj[p] = idx > params.length ? null : params[idx];
+                return obj;
+            }, {});
+        }
+
+        if (!!funcCall.validate && typeof funcCall.validate === 'function') {
+            var valid = funcCall.validate(params);
+            if (!valid) {
+                let _err = new Error(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
+                return await this._sendResponse(_replyTo, _correlationId as string, _err, _reqMessage.body.type);
+            }
+        }
+
+        var args = funcCall.arguments.map(function(p: any) { return params[p]; });
+
         try {
-            let _response = await funcCall(params);
+            let _response = await funcCall.callback.apply(null, args);
             return await this._sendResponse(_replyTo, _correlationId as string, _response, _reqMessage.body.type);
         } catch (error) {
             return await this._sendResponse(_replyTo, _correlationId as string, error, _reqMessage.body.type);
@@ -84,12 +101,16 @@ export class RpcServer {
     /**
      * Extract parameter names from a function
      */
-    // private extractParameterNames(func: Function) {
-    //     var fnStr = func.toString().replace(this.STRIP_COMMENTS, '');
-    //     var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(this.ARGUMENT_NAMES);
-    //     if (result === null) return [];
-    //     return result;
-    // }
+    private extractParameterNames(func: Function) {
+        var fnStr = func.toString().replace(this.STRIP_COMMENTS, '');
+        var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(this.ARGUMENT_NAMES);
+        if (result === null) return [];
+        return result;
+    }
+
+    private _isPlainObject = function(obj: any) {
+        return Object.prototype.toString.call(obj) === '[object Object]';
+      };
 
     public bind(functionDefintion: ServerFunctionDefinition, callback: Function) {
         if (typeof functionDefintion === 'undefined' || functionDefintion === null) {
@@ -104,11 +125,44 @@ export class RpcServer {
             throw new Error('Duplicate method being bound to RPC server');
         }
 
+        let _funcDefParams = null,
+            _funcDefinedParams: RegExpMatchArray | null = null,
+            _validate: Ajv.ValidateFunction | null = null;
+
         if (functionDefintion.hasOwnProperty('params')) {
-            
+            _funcDefParams = functionDefintion.params;
         }
 
-        this._serverFunctions[functionDefintion.name] = callback;
+        _funcDefinedParams = this.extractParameterNames(callback);
+
+        if (!!_funcDefParams) {
+            if (!this._isPlainObject(_funcDefParams)) {
+              throw new Error('not a plain object');
+            }
+        
+            if (!_funcDefParams.hasOwnProperty('properties')) {
+              throw new Error('missing `properties`');
+            }
+        
+            // do a basic check to see if we know about all named parameters
+            Object.keys(_funcDefParams.properties).map(function(p) {
+              var idx = _funcDefinedParams!.indexOf(p);
+              if (idx === -1)
+                throw new Error(`unknown parameter:  ${p}`);
+            });
+        
+            _validate = this._ajv.compile(_funcDefParams);
+        }
+        
+        if (this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
+            throw new Error(functionDefintion.name);
+        }
+
+        this._serverFunctions[functionDefintion.name] = {
+            callback,
+            validate: _validate!,
+            arguments: _funcDefinedParams
+        };
     }
 
     public async connect() {
