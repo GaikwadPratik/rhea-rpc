@@ -27,11 +27,11 @@ class RheaRpc {
         await _rpcClient.connect();
         return _rpcClient;
     }
-    async createRpcServer(amqpNode) {
+    async createRpcServer(amqpNode, options) {
         if (this._connection === null) {
             throw new Error(`Please initiate connection using '${this.createAmqpClient.name}'`);
         }
-        let _rpcServer = new rpcServer_1.RpcServer(amqpNode, this._connection);
+        let _rpcServer = new rpcServer_1.RpcServer(amqpNode, this._connection, options);
         await _rpcServer.connect();
         return _rpcServer;
     }

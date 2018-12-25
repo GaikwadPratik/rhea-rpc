@@ -1,5 +1,5 @@
 import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents } from "rhea-promise";
-import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode } from "./util/common";
+import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv from "ajv";
 import { UnknownFunctionError, FunctionDefinitionValidationError, MissingFunctionDefinitionError, MissingFunctionNameError, DuplicateFunctionDefinitionError, ParamsNotObjectError, ParamsMissingPropertiesError, UnknowParameterError } from './util/errors';
 
@@ -18,8 +18,9 @@ export class RpcServer {
     private _ajv: Ajv.Ajv;
     private readonly STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
     private readonly ARGUMENT_NAMES = /([^\s,]+)/g;
+    private readonly _options!: ServerOptions | undefined;
 
-    constructor(amqpNode: string, connection: Connection) {
+    constructor(amqpNode: string, connection: Connection, options?: ServerOptions) {
         this._amqpNode = amqpNode;
         this._connection = connection;
         this._ajv = new Ajv({
@@ -31,6 +32,7 @@ export class RpcServer {
             validateSchema: true,
             useDefaults: false
         });
+        this._options = options;
     }
 
     private async _processRequest(context: EventContext) {
@@ -47,6 +49,13 @@ export class RpcServer {
                 _reqMessage.body = JSON.parse(_reqMessage.body);
             } catch (error) {
                 return await this._sendResponse(_replyTo, _correlationId as string, error, _replyTo !== '' ? RpcRequestType.Call : RpcRequestType.Notify);
+            }
+        }
+
+        if (typeof this._options !== 'undefined' && this._options !== null && typeof this._options.interceptor === 'function') {
+            const proceed = await this._options.interceptor(context.delivery!, _reqMessage.body);
+            if (proceed === false) {
+                return;
             }
         }
 
@@ -167,15 +176,21 @@ export class RpcServer {
     }
 
     public async connect() {
-        const _receiverOptions: ReceiverOptions = {
+        const _receiverOptions: ReceiverOptions = {};
+        if (typeof this._options !== 'undefined' && this._options !== null && this._options.receiverOptions) {
+            Object.assign(_receiverOptions, _receiverOptions, this._options.receiverOptions);
+        }
+
+        Object.assign(_receiverOptions, {
             source: {
                 address: this._amqpNode
             }
-        };
+        });
+        
         const _senderOptions: SenderOptions = {
             target: {}
         };
-        this._receiver = await this._connection.createReceiver(_receiverOptions);;
+        this._receiver = await this._connection.createReceiver(_receiverOptions);
         this._sender = await this._connection.createSender(_senderOptions);
         this._receiver.on(ReceiverEvents.message, this._processRequest.bind(this));
         this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {

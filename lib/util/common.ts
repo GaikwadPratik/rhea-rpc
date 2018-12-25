@@ -1,5 +1,11 @@
+import { Delivery, ReceiverOptions } from 'rhea-promise';
 export interface MessageOptions {
     timeout: number
+}
+
+export interface ServerOptions {
+    interceptor?(delivery: Delivery, requestMessage: any): boolean,
+    receiverOptions?: ReceiverOptions
 }
 
 export enum RpcRequestType {
