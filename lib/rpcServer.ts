@@ -53,8 +53,8 @@ export class RpcServer {
         }
 
         if (typeof this._options !== 'undefined' && this._options !== null && typeof this._options.interceptor === 'function') {
-            const result = await this._options.interceptor(context.delivery!, _reqMessage.body);
-            if (result === false) {
+            const proceed = await this._options.interceptor(context.delivery!, _reqMessage.body);
+            if (proceed === false) {
                 return;
             }
         }
