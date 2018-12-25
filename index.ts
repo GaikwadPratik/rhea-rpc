@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions } from "rhea-promise";
 import { RpcClient } from "./lib/rpcClient";
 import { RpcServer } from "./lib/rpcServer";
-import { MessageOptions } from "./lib/util/common";
+import { MessageOptions, ServerOptions } from "./lib/util/common";
 
 export class RheaRpc {
     private _connection: Connection | null = null;
@@ -27,11 +27,11 @@ export class RheaRpc {
         return _rpcClient;
     }
 
-    public async createRpcServer(amqpNode: string): Promise<RpcServer> {
+    public async createRpcServer(amqpNode: string, options?: ServerOptions): Promise<RpcServer> {
         if (this._connection === null) {
             throw new Error(`Please initiate connection using '${this.createAmqpClient.name}'`);
         }
-        let _rpcServer: RpcServer = new RpcServer(amqpNode, this._connection);
+        let _rpcServer: RpcServer = new RpcServer(amqpNode, this._connection, options);
         await _rpcServer.connect();
         return _rpcServer;
     }

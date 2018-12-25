@@ -6,7 +6,7 @@ const common_1 = require("./util/common");
 const ajv_1 = tslib_1.__importDefault(require("ajv"));
 const errors_1 = require("./util/errors");
 class RpcServer {
-    constructor(amqpNode, connection) {
+    constructor(amqpNode, connection, options) {
         this._amqpNode = '';
         this._serverFunctions = {};
         this.STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -25,6 +25,7 @@ class RpcServer {
             validateSchema: true,
             useDefaults: false
         });
+        this._options = options;
     }
     async _processRequest(context) {
         const _reqMessage = context.message;
@@ -39,6 +40,12 @@ class RpcServer {
             }
             catch (error) {
                 return await this._sendResponse(_replyTo, _correlationId, error, _replyTo !== '' ? common_1.RpcRequestType.Call : common_1.RpcRequestType.Notify);
+            }
+        }
+        if (typeof this._options !== 'undefined' && this._options !== null && typeof this._options.interceptor === 'function') {
+            const result = await this._options.interceptor(context.delivery);
+            if (result === false) {
+                return;
             }
         }
         if (!this._serverFunctions.hasOwnProperty(_reqMessage.subject)) {
@@ -134,7 +141,12 @@ class RpcServer {
         };
     }
     async connect() {
-        const _receiverOptions = {
+        let _receiverOptions = {};
+        if (typeof this._options !== 'undefined' && this._options !== null && this._options.receiverOptions) {
+            const temp = this._options.receiverOptions;
+            _receiverOptions = Object.assign({}, _receiverOptions, temp);
+        }
+        _receiverOptions = {
             source: {
                 address: this._amqpNode
             }
