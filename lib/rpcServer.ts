@@ -176,18 +176,16 @@ export class RpcServer {
     }
 
     public async connect() {
-        let _receiverOptions: ReceiverOptions = {};
-
+        const _receiverOptions: ReceiverOptions = {};
         if (typeof this._options !== 'undefined' && this._options !== null && this._options.receiverOptions) {
-            const temp = this._options.receiverOptions;
-            _receiverOptions = Object.assign({}, _receiverOptions, temp);
+            Object.assign(_receiverOptions, _receiverOptions, this._options.receiverOptions);
         }
 
-        _receiverOptions = {
+        Object.assign(_receiverOptions, {
             source: {
                 address: this._amqpNode
             }
-        };
+        });
         
         const _senderOptions: SenderOptions = {
             target: {}

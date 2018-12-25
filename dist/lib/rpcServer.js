@@ -43,8 +43,8 @@ class RpcServer {
             }
         }
         if (typeof this._options !== 'undefined' && this._options !== null && typeof this._options.interceptor === 'function') {
-            const result = await this._options.interceptor(context.delivery);
-            if (result === false) {
+            const proceed = await this._options.interceptor(context.delivery, _reqMessage.body);
+            if (proceed === false) {
                 return;
             }
         }
@@ -141,21 +141,19 @@ class RpcServer {
         };
     }
     async connect() {
-        let _receiverOptions = {};
+        const _receiverOptions = {};
         if (typeof this._options !== 'undefined' && this._options !== null && this._options.receiverOptions) {
-            const temp = this._options.receiverOptions;
-            _receiverOptions = Object.assign({}, _receiverOptions, temp);
+            Object.assign(_receiverOptions, _receiverOptions, this._options.receiverOptions);
         }
-        _receiverOptions = {
+        Object.assign(_receiverOptions, {
             source: {
                 address: this._amqpNode
             }
-        };
+        });
         const _senderOptions = {
             target: {}
         };
         this._receiver = await this._connection.createReceiver(_receiverOptions);
-        ;
         this._sender = await this._connection.createSender(_senderOptions);
         this._receiver.on(rhea_promise_1.ReceiverEvents.message, this._processRequest.bind(this));
         this._receiver.on(rhea_promise_1.ReceiverEvents.receiverError, (context) => {
