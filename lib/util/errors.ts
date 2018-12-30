@@ -1,14 +1,14 @@
 import { ErrorCodes } from './common';
 
-export class RequestTimeoutError extends Error {
+export class AmqpRpcRequestTimeoutError extends Error {
     public code: string;
     constructor(message?: string) {
         super(message);
-        this.code = ErrorCodes.RequestTimeOut;
+        this.code = ErrorCodes.AmqpRpcRequestTimeOut;
     }
 }
 
-export class RpcResponseError extends Error {
+export class AmqpRpcResponseError extends Error {
     public code: string;
     constructor(message: string, code: string) {
         super(message);
@@ -16,66 +16,66 @@ export class RpcResponseError extends Error {
     }
 }
 
-export class MissingFunctionDefinitionError extends Error {
+export class AmqpRpcMissingFunctionDefinitionError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.MissingFunctionDefinition;
+        this.code = ErrorCodes.AmqpRpcMissingFunctionDefinition;
     }
 }
 
-export class MissingFunctionNameError extends Error {
+export class AmqpRpcMissingFunctionNameError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.MissingFunctionName;
+        this.code = ErrorCodes.AmqpRpcMissingFunctionName;
     }
 }
 
-export class DuplicateFunctionDefinitionError extends Error {
+export class AmqpRpcDuplicateFunctionDefinitionError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.DuplicateFunctionDefinition;
+        this.code = ErrorCodes.AmqpRpcDuplicateFunctionDefinition;
     }
 }
 
-export class ParamsNotObjectError extends Error {
+export class AmqpRpcParamsNotObjectError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.ParamsNotObject;
+        this.code = ErrorCodes.AmqpRpcParamsNotObject;
     }
 }
 
-export class ParamsMissingPropertiesError extends Error {
+export class AmqpRpcParamsMissingPropertiesError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.ParamsMissingProperties;
+        this.code = ErrorCodes.AmqpRpcParamsMissingProperties;
     }
 }
 
-export class UnknowParameterError extends Error {
+export class AmqpRpcUnknowParameterError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.UnknownParameter;
+        this.code = ErrorCodes.AmqpRpcUnknownParameter;
     }
 }
 
-export class UnknownFunctionError extends Error {
+export class AmqpRpcUnknownFunctionError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.UnknownFunction;
+        this.code = ErrorCodes.AmqpRpcUnknownFunction;
     }
 }
 
-export class FunctionDefinitionValidationError extends Error {
+export class AmqpRpcFunctionDefinitionValidationError extends Error {
     public code: string;
     constructor(message: string) {
         super(message);
-        this.code = ErrorCodes.FunctionDefinitionValidationError;
+        this.code = ErrorCodes.AmqpRpcFunctionDefinitionValidationError;
     }
 }

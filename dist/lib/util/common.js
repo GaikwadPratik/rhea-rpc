@@ -12,16 +12,16 @@ var RpcResponseCode;
 })(RpcResponseCode = exports.RpcResponseCode || (exports.RpcResponseCode = {}));
 var ErrorCodes;
 (function (ErrorCodes) {
-    ErrorCodes["RequestTimeOut"] = "RequestTimeOut";
-    ErrorCodes["EmptyResponse"] = "EmptyResponse";
-    ErrorCodes["EmptyResponseBody"] = "EmptyResponseBody";
-    ErrorCodes["MissingFunctionDefinition"] = "MissingFunctionDefinition";
-    ErrorCodes["MissingFunctionName"] = "MissingFunctionName";
-    ErrorCodes["DuplicateFunctionDefinition"] = "DuplicateFunctionDefinition";
-    ErrorCodes["ParamsNotObject"] = "ParamsNotObject";
-    ErrorCodes["ParamsMissingProperties"] = "ParamsMissingProperties";
-    ErrorCodes["UnknownParameter"] = "UnknownParameter";
-    ErrorCodes["UnknownFunction"] = "UnknownFunction";
-    ErrorCodes["FunctionDefinitionValidationError"] = "FunctionDefinitionValidationError";
+    ErrorCodes["AmqpRpcRequestTimeOut"] = "AmqpRpcRequestTimeOut";
+    ErrorCodes["AmqpRpcEmptyResponse"] = "AmqpRpcEmptyResponse";
+    ErrorCodes["AmqpRpcEmptyResponseBody"] = "AmqpRpcEmptyResponseBody";
+    ErrorCodes["AmqpRpcMissingFunctionDefinition"] = "AmqpRpcMissingFunctionDefinition";
+    ErrorCodes["AmqpRpcMissingFunctionName"] = "AmqpRpcMissingFunctionName";
+    ErrorCodes["AmqpRpcDuplicateFunctionDefinition"] = "AmqpRpcDuplicateFunctionDefinition";
+    ErrorCodes["AmqpRpcParamsNotObject"] = "AmqpRpcParamsNotObject";
+    ErrorCodes["AmqpRpcParamsMissingProperties"] = "AmqpRpcParamsMissingProperties";
+    ErrorCodes["AmqpRpcUnknownParameter"] = "AmqpRpcUnknownParameter";
+    ErrorCodes["AmqpRpcUnknownFunction"] = "AmqpRpcUnknownFunction";
+    ErrorCodes["AmqpRpcFunctionDefinitionValidationError"] = "AmqpRpcFunctionDefinitionValidationError";
 })(ErrorCodes = exports.ErrorCodes || (exports.ErrorCodes = {}));
 //# sourceMappingURL=common.js.map

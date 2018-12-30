@@ -28,15 +28,15 @@ export interface ServerFunctionDefinition {
 }
 
 export enum ErrorCodes {
-    RequestTimeOut = 'RequestTimeOut',
-    EmptyResponse = 'EmptyResponse',
-    EmptyResponseBody = 'EmptyResponseBody',
-    MissingFunctionDefinition = 'MissingFunctionDefinition',
-    MissingFunctionName = 'MissingFunctionName',
-    DuplicateFunctionDefinition = 'DuplicateFunctionDefinition',
-    ParamsNotObject = 'ParamsNotObject',
-    ParamsMissingProperties = 'ParamsMissingProperties',
-    UnknownParameter = 'UnknownParameter',
-    UnknownFunction = 'UnknownFunction',
-    FunctionDefinitionValidationError = 'FunctionDefinitionValidationError'
+    AmqpRpcRequestTimeOut = 'AmqpRpcRequestTimeOut',
+    AmqpRpcEmptyResponse = 'AmqpRpcEmptyResponse',
+    AmqpRpcEmptyResponseBody = 'AmqpRpcEmptyResponseBody',
+    AmqpRpcMissingFunctionDefinition = 'AmqpRpcMissingFunctionDefinition',
+    AmqpRpcMissingFunctionName = 'AmqpRpcMissingFunctionName',
+    AmqpRpcDuplicateFunctionDefinition = 'AmqpRpcDuplicateFunctionDefinition',
+    AmqpRpcParamsNotObject = 'AmqpRpcParamsNotObject',
+    AmqpRpcParamsMissingProperties = 'AmqpRpcParamsMissingProperties',
+    AmqpRpcUnknownParameter = 'AmqpRpcUnknownParameter',
+    AmqpRpcUnknownFunction = 'AmqpRpcUnknownFunction',
+    AmqpRpcFunctionDefinitionValidationError = 'AmqpRpcFunctionDefinitionValidationError'
 }

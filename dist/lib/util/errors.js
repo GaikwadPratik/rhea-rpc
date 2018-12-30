@@ -1,74 +1,74 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("./common");
-class RequestTimeoutError extends Error {
+class AmqpRpcRequestTimeoutError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.RequestTimeOut;
+        this.code = common_1.ErrorCodes.AmqpRpcRequestTimeOut;
     }
 }
-exports.RequestTimeoutError = RequestTimeoutError;
-class RpcResponseError extends Error {
+exports.AmqpRpcRequestTimeoutError = AmqpRpcRequestTimeoutError;
+class AmqpRpcResponseError extends Error {
     constructor(message, code) {
         super(message);
         this.code = code;
     }
 }
-exports.RpcResponseError = RpcResponseError;
-class MissingFunctionDefinitionError extends Error {
+exports.AmqpRpcResponseError = AmqpRpcResponseError;
+class AmqpRpcMissingFunctionDefinitionError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.MissingFunctionDefinition;
+        this.code = common_1.ErrorCodes.AmqpRpcMissingFunctionDefinition;
     }
 }
-exports.MissingFunctionDefinitionError = MissingFunctionDefinitionError;
-class MissingFunctionNameError extends Error {
+exports.AmqpRpcMissingFunctionDefinitionError = AmqpRpcMissingFunctionDefinitionError;
+class AmqpRpcMissingFunctionNameError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.MissingFunctionName;
+        this.code = common_1.ErrorCodes.AmqpRpcMissingFunctionName;
     }
 }
-exports.MissingFunctionNameError = MissingFunctionNameError;
-class DuplicateFunctionDefinitionError extends Error {
+exports.AmqpRpcMissingFunctionNameError = AmqpRpcMissingFunctionNameError;
+class AmqpRpcDuplicateFunctionDefinitionError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.DuplicateFunctionDefinition;
+        this.code = common_1.ErrorCodes.AmqpRpcDuplicateFunctionDefinition;
     }
 }
-exports.DuplicateFunctionDefinitionError = DuplicateFunctionDefinitionError;
-class ParamsNotObjectError extends Error {
+exports.AmqpRpcDuplicateFunctionDefinitionError = AmqpRpcDuplicateFunctionDefinitionError;
+class AmqpRpcParamsNotObjectError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.ParamsNotObject;
+        this.code = common_1.ErrorCodes.AmqpRpcParamsNotObject;
     }
 }
-exports.ParamsNotObjectError = ParamsNotObjectError;
-class ParamsMissingPropertiesError extends Error {
+exports.AmqpRpcParamsNotObjectError = AmqpRpcParamsNotObjectError;
+class AmqpRpcParamsMissingPropertiesError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.ParamsMissingProperties;
+        this.code = common_1.ErrorCodes.AmqpRpcParamsMissingProperties;
     }
 }
-exports.ParamsMissingPropertiesError = ParamsMissingPropertiesError;
-class UnknowParameterError extends Error {
+exports.AmqpRpcParamsMissingPropertiesError = AmqpRpcParamsMissingPropertiesError;
+class AmqpRpcUnknowParameterError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.UnknownParameter;
+        this.code = common_1.ErrorCodes.AmqpRpcUnknownParameter;
     }
 }
-exports.UnknowParameterError = UnknowParameterError;
-class UnknownFunctionError extends Error {
+exports.AmqpRpcUnknowParameterError = AmqpRpcUnknowParameterError;
+class AmqpRpcUnknownFunctionError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.UnknownFunction;
+        this.code = common_1.ErrorCodes.AmqpRpcUnknownFunction;
     }
 }
-exports.UnknownFunctionError = UnknownFunctionError;
-class FunctionDefinitionValidationError extends Error {
+exports.AmqpRpcUnknownFunctionError = AmqpRpcUnknownFunctionError;
+class AmqpRpcFunctionDefinitionValidationError extends Error {
     constructor(message) {
         super(message);
-        this.code = common_1.ErrorCodes.FunctionDefinitionValidationError;
+        this.code = common_1.ErrorCodes.AmqpRpcFunctionDefinitionValidationError;
     }
 }
-exports.FunctionDefinitionValidationError = FunctionDefinitionValidationError;
+exports.AmqpRpcFunctionDefinitionValidationError = AmqpRpcFunctionDefinitionValidationError;
 //# sourceMappingURL=errors.js.map
