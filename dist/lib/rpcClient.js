@@ -35,7 +35,8 @@ class RpcClient {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
                             delete this._requestPendingResponse[request.id];
                         }
-                        return reject(new errors_1.RequestTimeoutError(`Request timed out while executing: '${request.name}'`));
+                        this.disconnect();
+                        return reject(new errors_1.AmqpRpcRequestTimeoutError(`Request timed out while executing: '${request.name}'`));
                     }, this._messageOptions.timeout),
                     response: { resolve, reject }
                 };
@@ -49,10 +50,10 @@ class RpcClient {
     }
     async _processResponse(context) {
         if (typeof context === 'undefined' || context === null) {
-            throw new errors_1.RpcResponseError('Empty response received from RPC server', common_1.ErrorCodes.EmptyResponse);
+            throw new errors_1.AmqpRpcResponseError('Empty response received from RPC server', common_1.ErrorCodes.AmqpRpcEmptyResponse);
         }
         if (typeof context.message === 'undefined' || context.message === null) {
-            throw new errors_1.RpcResponseError('Empty message body received from RPC server', common_1.ErrorCodes.EmptyResponseBody);
+            throw new errors_1.AmqpRpcResponseError('Empty message body received from RPC server', common_1.ErrorCodes.AmqpRpcEmptyResponseBody);
         }
         const id = context.message.correlation_id;
         const callback = this._requestPendingResponse[id].response;

@@ -1,6 +1,6 @@
 import { Connection, EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptions, ReceiverOptions, SenderEvents } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
-import { RequestTimeoutError, RpcResponseError } from './util/errors';
+import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors';
 
 interface PendingRequest {
     id: string,
@@ -53,7 +53,8 @@ export class RpcClient {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
                             delete this._requestPendingResponse[request.id];
                         }
-                        return reject(new RequestTimeoutError(`Request timed out while executing: '${request.name}'`));
+                        this.disconnect();
+                        return reject(new AmqpRpcRequestTimeoutError(`Request timed out while executing: '${request.name}'`));
                     }, this._messageOptions.timeout),
                     response: {resolve, reject}
                 }
@@ -67,11 +68,11 @@ export class RpcClient {
 
     private async _processResponse(context: EventContext) {
         if (typeof context === 'undefined' || context === null) {
-            throw new RpcResponseError('Empty response received from RPC server', ErrorCodes.EmptyResponse);
+            throw new AmqpRpcResponseError('Empty response received from RPC server', ErrorCodes.AmqpRpcEmptyResponse);
           }
       
           if (typeof context.message === 'undefined' || context.message === null) {
-            throw new RpcResponseError('Empty message body received from RPC server', ErrorCodes.EmptyResponseBody);
+            throw new AmqpRpcResponseError('Empty message body received from RPC server', ErrorCodes.AmqpRpcEmptyResponseBody);
           }
       
           const id = context.message!.correlation_id as string;
