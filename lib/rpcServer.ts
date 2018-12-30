@@ -37,7 +37,11 @@ export class RpcServer {
 
     private async _processRequest(context: EventContext) {
         const _reqMessage: Message = context.message!;
-        if (!_reqMessage.hasOwnProperty('subject') || !_reqMessage.hasOwnProperty('body')) {
+        if (typeof _reqMessage.subject === 'undefined'
+            || _reqMessage.subject === null
+            || typeof _reqMessage.body === 'undefined'
+            || _reqMessage.body === null) {
+                //TODO: Log message is missing subject or bory
             context.delivery!.release({undeliverable_here: true});
             return;
         }
@@ -59,7 +63,7 @@ export class RpcServer {
             }
         }
 
-        if(!this._serverFunctions.hasOwnProperty(_reqMessage.subject!)) {
+        if(typeof this._serverFunctions[_reqMessage.subject!] !== 'function') {
             return await this._sendResponse(_replyTo, _correlationId as string, new UnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
         }
 
@@ -127,7 +131,7 @@ export class RpcServer {
             throw new MissingFunctionDefinitionError('Function definition missing');
         }
 
-        if (!functionDefintion.hasOwnProperty('name')) {
+        if (typeof functionDefintion.name !== 'string') {
             throw new MissingFunctionNameError('Function name is missing from definition');
         }
 
@@ -139,7 +143,7 @@ export class RpcServer {
             _funcDefinedParams: RegExpMatchArray | null = null,
             _validate: Ajv.ValidateFunction | null = null;
 
-        if (functionDefintion.hasOwnProperty('params')) {
+        if (typeof functionDefintion.params !== 'undefined' && functionDefintion.params !== null) {
             _funcDefParams = functionDefintion.params;
         }
 
@@ -150,7 +154,7 @@ export class RpcServer {
               throw new ParamsNotObjectError('not a plain object');
             }
         
-            if (!_funcDefParams.hasOwnProperty('properties')) {
+            if (typeof _funcDefParams.properties === 'undefined' || _funcDefParams.properties === null) {
               throw new ParamsMissingPropertiesError('missing `properties`');
             }
         
@@ -162,10 +166,6 @@ export class RpcServer {
             });
         
             _validate = this._ajv.compile(_funcDefParams);
-        }
-        
-        if (this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
-            throw new Error(functionDefintion.name);
         }
 
         this._serverFunctions[functionDefintion.name] = {

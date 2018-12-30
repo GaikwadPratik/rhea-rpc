@@ -29,7 +29,11 @@ class RpcServer {
     }
     async _processRequest(context) {
         const _reqMessage = context.message;
-        if (!_reqMessage.hasOwnProperty('subject') || !_reqMessage.hasOwnProperty('body')) {
+        if (typeof _reqMessage.subject === 'undefined'
+            || _reqMessage.subject === null
+            || typeof _reqMessage.body === 'undefined'
+            || _reqMessage.body === null) {
+            //TODO: Log message is missing subject or bory
             context.delivery.release({ undeliverable_here: true });
             return;
         }
@@ -48,7 +52,7 @@ class RpcServer {
                 return;
             }
         }
-        if (!this._serverFunctions.hasOwnProperty(_reqMessage.subject)) {
+        if (typeof this._serverFunctions[_reqMessage.subject] !== 'function') {
             return await this._sendResponse(_replyTo, _correlationId, new errors_1.UnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
         }
         const funcCall = this._serverFunctions[_reqMessage.subject];
@@ -105,14 +109,14 @@ class RpcServer {
         if (typeof functionDefintion === 'undefined' || functionDefintion === null) {
             throw new errors_1.MissingFunctionDefinitionError('Function definition missing');
         }
-        if (!functionDefintion.hasOwnProperty('name')) {
+        if (typeof functionDefintion.name !== 'string') {
             throw new errors_1.MissingFunctionNameError('Function name is missing from definition');
         }
         if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
             throw new errors_1.DuplicateFunctionDefinitionError('Duplicate method being bound to RPC server');
         }
         let _funcDefParams = null, _funcDefinedParams = null, _validate = null;
-        if (functionDefintion.hasOwnProperty('params')) {
+        if (typeof functionDefintion.params !== 'undefined' && functionDefintion.params !== null) {
             _funcDefParams = functionDefintion.params;
         }
         _funcDefinedParams = this.extractParameterNames(callback);
@@ -120,7 +124,7 @@ class RpcServer {
             if (!this._isPlainObject(_funcDefParams)) {
                 throw new errors_1.ParamsNotObjectError('not a plain object');
             }
-            if (!_funcDefParams.hasOwnProperty('properties')) {
+            if (typeof _funcDefParams.properties === 'undefined' || _funcDefParams.properties === null) {
                 throw new errors_1.ParamsMissingPropertiesError('missing `properties`');
             }
             // do a basic check to see if we know about all named parameters
@@ -130,9 +134,6 @@ class RpcServer {
                     throw new errors_1.UnknowParameterError(`unknown parameter:  ${p}`);
             });
             _validate = this._ajv.compile(_funcDefParams);
-        }
-        if (this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
-            throw new Error(functionDefintion.name);
         }
         this._serverFunctions[functionDefintion.name] = {
             callback,
