@@ -33,7 +33,7 @@ class RpcServer {
             || _reqMessage.subject === null
             || typeof _reqMessage.body === 'undefined'
             || _reqMessage.body === null) {
-            //TODO: Log message is missing subject or bory
+            //TODO: Log message is missing subject or body
             context.delivery.release({ undeliverable_here: true });
             return;
         }
@@ -52,8 +52,8 @@ class RpcServer {
                 return;
             }
         }
-        if (typeof this._serverFunctions[_reqMessage.subject] !== 'function') {
-            return await this._sendResponse(_replyTo, _correlationId, new errors_1.UnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
+        if (typeof this._serverFunctions[_reqMessage.subject] === 'undefined' || this._serverFunctions[_reqMessage.subject] === null) {
+            return await this._sendResponse(_replyTo, _correlationId, new errors_1.AmqpRpcUnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
         }
         const funcCall = this._serverFunctions[_reqMessage.subject];
         let params = _reqMessage.body.args;
@@ -66,7 +66,7 @@ class RpcServer {
         if (!!funcCall.validate && typeof funcCall.validate === 'function') {
             const valid = funcCall.validate(params);
             if (!valid) {
-                let _err = new errors_1.FunctionDefinitionValidationError(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
+                let _err = new errors_1.AmqpRpcFunctionDefinitionValidationError(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
                 return await this._sendResponse(_replyTo, _correlationId, _err, _reqMessage.body.type);
             }
         }
@@ -107,13 +107,13 @@ class RpcServer {
     }
     bind(functionDefintion, callback) {
         if (typeof functionDefintion === 'undefined' || functionDefintion === null) {
-            throw new errors_1.MissingFunctionDefinitionError('Function definition missing');
+            throw new errors_1.AmqpRpcMissingFunctionDefinitionError('Function definition missing');
         }
         if (typeof functionDefintion.name !== 'string') {
-            throw new errors_1.MissingFunctionNameError('Function name is missing from definition');
+            throw new errors_1.AmqpRpcMissingFunctionNameError('Function name is missing from definition');
         }
         if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
-            throw new errors_1.DuplicateFunctionDefinitionError('Duplicate method being bound to RPC server');
+            throw new errors_1.AmqpRpcDuplicateFunctionDefinitionError('Duplicate method being bound to RPC server');
         }
         let _funcDefParams = null, _funcDefinedParams = null, _validate = null;
         if (typeof functionDefintion.params !== 'undefined' && functionDefintion.params !== null) {
@@ -122,16 +122,16 @@ class RpcServer {
         _funcDefinedParams = this.extractParameterNames(callback);
         if (!!_funcDefParams) {
             if (!this._isPlainObject(_funcDefParams)) {
-                throw new errors_1.ParamsNotObjectError('not a plain object');
+                throw new errors_1.AmqpRpcParamsNotObjectError('not a plain object');
             }
             if (typeof _funcDefParams.properties === 'undefined' || _funcDefParams.properties === null) {
-                throw new errors_1.ParamsMissingPropertiesError('missing `properties`');
+                throw new errors_1.AmqpRpcParamsMissingPropertiesError('missing `properties`');
             }
             // do a basic check to see if we know about all named parameters
             Object.keys(_funcDefParams.properties).map(function (p) {
                 const idx = _funcDefinedParams.indexOf(p);
                 if (idx === -1)
-                    throw new errors_1.UnknowParameterError(`unknown parameter:  ${p}`);
+                    throw new errors_1.AmqpRpcUnknowParameterError(`unknown parameter:  ${p}`);
             });
             _validate = this._ajv.compile(_funcDefParams);
         }
