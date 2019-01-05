@@ -66,7 +66,7 @@ class RpcClient {
                 const _receivedError = typeof context.message.body === 'string' ? JSON.parse(context.message.body) : context.message.body;
                 const _err = new Error(_receivedError.message);
                 _err.stack = _receivedError.stack;
-                if (_receivedError.hasOwnProperty('code')) {
+                if (typeof _receivedError.code !== 'undefined' && _receivedError.code !== null) {
                     _err.code = _receivedError.code;
                 }
                 return callback.reject(_err);
