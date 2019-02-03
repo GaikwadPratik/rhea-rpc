@@ -15,13 +15,19 @@ async function Main() {
         params: {
             type: 'object',
             properties: {
-                arg: { type: 'string' }
+                args: { 
+                    type: 'object',
+                    properties: {
+                        firstName: { type: 'string' },
+                        lastName: { type: 'string' }
+                    },
+                    required: [ 'firstName', 'lastName' ]
+                }
             },
-            required: [ 'arg' ]
         }
-    }, async (arg: string) => {
-        console.log(`Received input at Server ${arg}`);
-        return {'Test': `Hi ${arg}`};
+    }, async (args: {firstName: string, lastName: string}) => {
+        console.log(`Received input at Server ${JSON.stringify(args)}`);
+        return {'Test': `Hi ${args.firstName}`};
     });
 }
 

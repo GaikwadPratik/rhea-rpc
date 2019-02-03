@@ -10,7 +10,7 @@ async function Main() {
     };
     _client = await _client.createAmqpClient(_connectionOptions);
     let _rpcClient  = await _client.createRpcClient('rpc');
-    return await _rpcClient.notify('test', 'Pratik');
+    return await _rpcClient.notify('test', { firstName: 'firstName', lastName: 'lastName'});
 }
 
 Main()

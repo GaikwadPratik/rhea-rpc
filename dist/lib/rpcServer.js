@@ -63,7 +63,7 @@ class RpcServer {
                 return obj;
             }, {});
         }
-        if (!!funcCall.validate && typeof funcCall.validate === 'function') {
+        if (typeof funcCall.validate === 'function') {
             const valid = funcCall.validate(params);
             if (!valid) {
                 let _err = new errors_1.AmqpRpcFunctionDefinitionValidationError(`Validation Error: ${JSON.stringify(funcCall.validate.errors)}`);
@@ -120,7 +120,7 @@ class RpcServer {
             _funcDefParams = functionDefintion.params;
         }
         _funcDefinedParams = this.extractParameterNames(callback);
-        if (!!_funcDefParams) {
+        if (typeof _funcDefParams !== 'undefined' && _funcDefParams !== null) {
             if (!this._isPlainObject(_funcDefParams)) {
                 throw new errors_1.AmqpRpcParamsNotObjectError('not a plain object');
             }
