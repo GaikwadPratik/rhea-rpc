@@ -1,4 +1,4 @@
-import { Connection, ConnectionOptions } from "rhea-promise";
+import { Connection, ConnectionOptions, Delivery, ReceiverOptions } from "rhea-promise";
 
 export declare interface ServerFunctionDefinition {
     name: string,
@@ -9,9 +9,14 @@ export declare interface ServerFunctionDefinition {
     }
 }
 
+export declare interface ServerOptions {
+    interceptor?(delivery: Delivery, requestMessage: any): boolean,
+    receiverOptions?: ReceiverOptions
+}
+
 export declare class RpcServer {
     constructor(amqpNode: string, connection: Connection);
-    bind(functionDefintion: ServerFunctionDefinition, callback: Function): void;
+    bind(functionDefintion: ServerFunctionDefinition, callback: Function, options?: ServerOptions): void;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
 }
@@ -29,9 +34,9 @@ export declare interface MessageOptions {
 }
 
 export declare class RheaRpc {
-    createAmqpClient(connectionOptions: ConnectionOptions, connection?: Connection): Promise<RheaRpc>;
+    createAmqpClient(connectionOptions?: ConnectionOptions, connection?: Connection): Promise<RheaRpc>;
     createRpcClient(amqpNode: string, options?: MessageOptions): Promise<RpcClient>;
-    createRpcServer(amqpNode: string): Promise<RpcServer>;
+    createRpcServer(amqpNode: string, options?: ServerOptions): Promise<RpcServer>;
 }
 
 export declare enum ErrorCodes {

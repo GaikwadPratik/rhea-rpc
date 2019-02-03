@@ -71,4 +71,3 @@ class AmqpRpcFunctionDefinitionValidationError extends Error {
     }
 }
 exports.AmqpRpcFunctionDefinitionValidationError = AmqpRpcFunctionDefinitionValidationError;
-//# sourceMappingURL=errors.js.map
