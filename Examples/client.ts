@@ -2,21 +2,20 @@ import { RheaRpc } from "../index";
 import { ConnectionOptions } from 'rhea-promise';
 
 async function Main() {
-    let _client = new RheaRpc();
-    let _connectionOptions: ConnectionOptions = {
+    const _connectionOptions: ConnectionOptions = {
         host: '',
         username: '',
         password: ''
     };
-    _client = await _client.createAmqpClient(_connectionOptions);
-    let _rpcClient  = await _client.createRpcClient('rpc');
-    return await _rpcClient.notify('test', { firstName: 'firstName', lastName: 'lastName'});
+    const _client = await new RheaRpc().createAmqpClient(_connectionOptions);
+    const _rpcClient  = await _client.createRpcClient('rpc');
+    console.log(await _rpcClient.call('namedParams', { firstName: '123', lastName: '456'}));
+    console.log(await _rpcClient.call('simpleParams', '123', '456'));
 }
 
 Main()
-    .then((c) => {
+    .then(() => {
         console.log('Client Connected');
-        console.log(c);
         setTimeout(() => process.exit(0), 1);
     })
     .catch(err => {

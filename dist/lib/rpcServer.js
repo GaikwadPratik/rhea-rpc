@@ -9,8 +9,8 @@ class RpcServer {
     constructor(amqpNode, connection, options) {
         this._amqpNode = '';
         this._serverFunctions = {};
-        this.STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-        this.ARGUMENT_NAMES = /([^\s,]+)/g;
+        this.STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
+        this.ARGUMENT_NAMES = /([^\s,{}]+)/mg;
         this._isPlainObject = function (obj) {
             return Object.prototype.toString.call(obj) === '[object Object]';
         };
@@ -56,12 +56,16 @@ class RpcServer {
             return await this._sendResponse(_replyTo, _correlationId, new errors_1.AmqpRpcUnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
         }
         const funcCall = this._serverFunctions[_reqMessage.subject];
-        let params = _reqMessage.body.args;
-        if (Array.isArray(params) && params.length > 0) { // convert to named parameters
+        let params = _reqMessage.body.args, overWriteArgs = false;
+        if (Array.isArray(params) && params.length > 0 && !this._isPlainObject(params[0])) { // convert to named parameters
             params = funcCall.arguments.reduce(function (obj, p, idx) {
                 obj[p] = idx > params.length ? null : params[idx];
                 return obj;
             }, {});
+        }
+        else {
+            params = params[0];
+            overWriteArgs = true;
         }
         if (typeof funcCall.validate === 'function') {
             const valid = funcCall.validate(params);
@@ -70,9 +74,15 @@ class RpcServer {
                 return await this._sendResponse(_replyTo, _correlationId, _err, _reqMessage.body.type);
             }
         }
-        const args = funcCall.arguments.map(function (p) { return params[p]; });
         try {
-            const _response = await funcCall.callback.apply(null, args);
+            let _response;
+            if (!overWriteArgs) {
+                const args = funcCall.arguments.map(function (p) { return params[p]; });
+                _response = await funcCall.callback.apply(null, args);
+            }
+            else {
+                _response = await funcCall.callback.call(null, params);
+            }
             return await this._sendResponse(_replyTo, _correlationId, _response, _reqMessage.body.type);
         }
         catch (error) {
@@ -170,3 +180,4 @@ class RpcServer {
     }
 }
 exports.RpcServer = RpcServer;
+//# sourceMappingURL=rpcServer.js.map

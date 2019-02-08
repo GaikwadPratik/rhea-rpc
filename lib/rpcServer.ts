@@ -18,8 +18,8 @@ export class RpcServer {
         }
     } = {};
     private _ajv: Ajv.Ajv;
-    private readonly STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-    private readonly ARGUMENT_NAMES = /([^\s,]+)/g;
+    private readonly STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
+    private readonly ARGUMENT_NAMES = /([^\s,{}]+)/mg;
     private readonly _options!: ServerOptions | undefined;
 
     constructor(amqpNode: string, connection: Connection, options?: ServerOptions) {
@@ -70,13 +70,17 @@ export class RpcServer {
         }
 
         const funcCall = this._serverFunctions[_reqMessage.subject!];
-        let params = _reqMessage.body.args;
+        let params = _reqMessage.body.args,
+            overWriteArgs = false;
         
-        if (Array.isArray(params) && params.length > 0) { // convert to named parameters
+        if (Array.isArray(params) && params.length > 0 && !this._isPlainObject(params[0])) { // convert to named parameters
             params = funcCall.arguments.reduce(function(obj: any, p: any, idx: any) {
                 obj[p] = idx > params.length ? null : params[idx];
                 return obj;
             }, {});
+        } else {
+            params = params[0];
+            overWriteArgs = true;
         }
 
         if (typeof funcCall.validate === 'function') {
@@ -87,10 +91,14 @@ export class RpcServer {
             }
         }
 
-        const args = funcCall.arguments.map(function(p: any) { return params[p]; });
-
         try {
-            const _response = await funcCall.callback.apply(null, args);
+            let _response: any;
+            if (!overWriteArgs) {
+                const args = funcCall.arguments.map(function(p: any) { return params[p]; });
+                _response = await funcCall.callback.apply(null, args);
+            } else {
+                _response = await funcCall.callback.call(null, params);
+            }
             return await this._sendResponse(_replyTo, _correlationId as string, _response, _reqMessage.body.type);
         } catch (error) {
             return await this._sendResponse(_replyTo, _correlationId as string, error, _reqMessage.body.type);

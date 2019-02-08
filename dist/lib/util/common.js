@@ -24,3 +24,4 @@ var ErrorCodes;
     ErrorCodes["AmqpRpcUnknownFunction"] = "AmqpRpcUnknownFunction";
     ErrorCodes["AmqpRpcFunctionDefinitionValidationError"] = "AmqpRpcFunctionDefinitionValidationError";
 })(ErrorCodes = exports.ErrorCodes || (exports.ErrorCodes = {}));
+//# sourceMappingURL=common.js.map
