@@ -9,25 +9,34 @@ async function Main() {
         password: ''
     };
     _client = await _client.createAmqpClient(_connectionOptions);
-    let _rpcServer  = await _client.createRpcServer('rpc');
+    const _rpcServer  = await _client.createRpcServer('rpc');
     _rpcServer.bind({
-        name: 'test',
+        name: 'namedParams',
         params: {
             type: 'object',
             properties: {
-                args: { 
-                    type: 'object',
-                    properties: {
-                        firstName: { type: 'string' },
-                        lastName: { type: 'string' }
-                    },
-                    required: [ 'firstName', 'lastName' ]
-                }
+                firstName: { type: 'string' },
+                lastName: { type: 'string' }                
             },
+            required: [ 'firstName', 'lastName' ]
         }
-    }, async (args: {firstName: string, lastName: string}) => {
-        console.log(`Received input at Server ${JSON.stringify(args)}`);
-        return {'Test': `Hi ${args.firstName}`};
+    }, async ({firstName, lastName}: {firstName: string, lastName: string}) => {
+        console.log(`Received input at Server ${JSON.stringify(firstName)}`);
+        return {'Test': `Hi ${lastName}`};
+    });
+    _rpcServer.bind({
+        name: 'simpleParams',
+        params: {
+            type: 'object',
+            properties: {
+                firstName: { type: 'string' },
+                lastName: { type: 'string' }                
+            },
+            required: [ 'firstName', 'lastName' ]
+        }
+    }, async (firstName: string, lastName: string) => {
+        console.log(`Received input at Server ${JSON.stringify(firstName)}`);
+        return {'Test': `Hi ${lastName}`};
     });
 }
 
