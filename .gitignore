@@ -1,5 +1,5 @@
 node_modules/
 .vscode
 dist/Examples
-dist/**/*.js.map
 package-lock.json
+dist

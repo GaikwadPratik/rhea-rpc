@@ -2,6 +2,7 @@ import { Connection, ConnectionOptions } from "rhea-promise";
 import { RpcClient } from "./lib/rpcClient";
 import { RpcServer } from "./lib/rpcServer";
 import { MessageOptions, ServerOptions } from "./lib/util/common";
+export * from './lib/util/common';
 
 export class RheaRpc {
     private _connection: Connection | null = null;
