@@ -2,6 +2,4 @@ lib/
 index.ts
 tsconfig.json
 .vscode/launch.json
-dist/Examples
 Examples
-typings
