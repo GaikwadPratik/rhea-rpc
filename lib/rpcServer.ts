@@ -172,7 +172,7 @@ export class RpcServer {
             Object.keys(_funcDefParams.properties).map(function(p) {
               const idx = _funcDefinedParams!.indexOf(p);
               if (idx === -1)
-                throw new AmqpRpcUnknowParameterError(`unknown parameter:  ${p}`);
+                throw new AmqpRpcUnknowParameterError(`unknown parameter: ${p} in ${functionDefintion.name}`);
             });
         
             _validate = this._ajv.compile(_funcDefParams);
