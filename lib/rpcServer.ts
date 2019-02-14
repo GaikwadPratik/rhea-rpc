@@ -85,14 +85,16 @@ export class RpcServer {
         let params = _reqMessage.body.params,
             overWriteArgs = false;
         
-        if (Array.isArray(params) && params.length > 0 && !this._isPlainObject(params[0])) { // convert to named parameters
-            params = funcCall.arguments.reduce(function(obj: any, p: any, idx: any) {
-                obj[p] = idx > params.length ? null : params[idx];
-                return obj;
-            }, {});
-        } else {
-            params = params[0];
-            overWriteArgs = true;
+        if (Array.isArray(params) && params.length > 0) {
+            if (!this._isPlainObject(params[0])) { // convert to named parameters
+                params = funcCall.arguments.reduce(function(obj: any, p: any, idx: any) {
+                    obj[p] = idx > params.length ? null : params[idx];
+                    return obj;
+                }, {});
+            } else {
+                params = params[0];
+                overWriteArgs = true;
+            }
         }
 
         if (typeof funcCall.validate === 'function') {

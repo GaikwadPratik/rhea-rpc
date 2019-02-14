@@ -11,6 +11,7 @@ async function Main() {
     const _rpcClient  = await _client.createRpcClient('rpc');
     console.log(await _rpcClient.call('namedParams', { firstName: '123', lastName: '456'}));
     console.log(await _rpcClient.call('simpleParams', '123', '456'));
+    console.log(await _rpcClient.call('noParams'));
 }
 
 Main()

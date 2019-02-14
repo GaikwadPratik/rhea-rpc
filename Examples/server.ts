@@ -11,6 +11,11 @@ async function Main() {
     _client = await _client.createAmqpClient(_connectionOptions);
     const _rpcServer  = await _client.createRpcServer('rpc');
     _rpcServer.bind({
+        method: 'noParams'
+    }, async() => {
+        return true;
+    })
+    _rpcServer.bind({
         method: 'namedParams',
         params: {
             type: 'object',
