@@ -38,10 +38,12 @@ export class RpcServer {
     }
 
     private async _processRequest(context: EventContext) {
-        const _reqMessage: Message = context.message!;
-        if (typeof _reqMessage.subject === 'undefined'
-            || _reqMessage.subject === null
-            || typeof _reqMessage.body === 'undefined'
+        if(typeof context.message === 'undefined' || context.message === null) {
+            context.delivery!.release({undeliverable_here: true});
+            return;
+        }
+        const _reqMessage: Message = context.message;
+        if (typeof _reqMessage.body === 'undefined'
             || _reqMessage.body === null) {
                 //TODO: Log message is missing subject or body
             context.delivery!.release({undeliverable_here: true});
@@ -58,6 +60,16 @@ export class RpcServer {
             }
         }
 
+        //compatibility with old rpc. will be removed after a year
+        if(typeof _reqMessage.subject !== 'string') {
+            _reqMessage.subject = _reqMessage.body.method;
+        }
+
+        //compatibility with old rpc. will be removed after a year
+        if (typeof _reqMessage.body.type !== 'string' || !Object.values(RpcRequestType).includes(_reqMessage.body.type)) {
+            _reqMessage.body.type = RpcRequestType.Obsolete;
+        }
+
         if (typeof this._options !== 'undefined' && this._options !== null && typeof this._options.interceptor === 'function') {
             const proceed = await this._options.interceptor(context.delivery!, _reqMessage.body);
             if (proceed === false) {
@@ -70,7 +82,7 @@ export class RpcServer {
         }
 
         const funcCall = this._serverFunctions[_reqMessage.subject!];
-        let params = _reqMessage.body.args,
+        let params = _reqMessage.body.params,
             overWriteArgs = false;
         
         if (Array.isArray(params) && params.length > 0 && !this._isPlainObject(params[0])) { // convert to named parameters
@@ -106,11 +118,27 @@ export class RpcServer {
     }
 
     private async _sendResponse(replyTo: string, correlationId: string, msg: any, type: RpcRequestType) {
-        if (type === RpcRequestType.Call) {
+        if ([RpcRequestType.Call, RpcRequestType.Obsolete].includes(type)) {
             let _isError = false;
             if (msg instanceof Error) {
                 _isError = true;
-                msg = JSON.stringify(msg, Object.getOwnPropertyNames(msg))
+                //compatibility with old rpc. will be removed after a year
+                if (type === RpcRequestType.Obsolete) {
+                    msg = {
+                        error: {
+                            code: typeof (msg as any).code !== 'undefined' && (msg as any).code !== null ? (msg as any).code : 'ErrorWithoutCode',
+                            message: typeof msg.message === 'string' ? msg.message : 'ErrorWithoutMessage',
+                            data: typeof (msg as any).data !== 'undefined' && (msg as any).data !== null ? (msg as any).data : msg,
+                        }
+                    }
+                } else {
+                    msg = JSON.stringify(msg, Object.getOwnPropertyNames(msg))
+                }
+            } else {
+                //compatibility with old rpc. will be removed after a year
+                if (type === RpcRequestType.Obsolete) {
+                    msg = typeof msg === 'undefined' ? null : { result: msg };
+                }
             }
             const _resMessage: Message = {
                 to: replyTo,
@@ -141,11 +169,11 @@ export class RpcServer {
             throw new AmqpRpcMissingFunctionDefinitionError('Function definition missing');
         }
 
-        if (typeof functionDefintion.name !== 'string') {
+        if (typeof functionDefintion.method !== 'string') {
             throw new AmqpRpcMissingFunctionNameError('Function name is missing from definition');
         }
 
-        if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.name)) {
+        if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.method)) {
             throw new AmqpRpcDuplicateFunctionDefinitionError('Duplicate method being bound to RPC server');
         }
 
@@ -172,13 +200,13 @@ export class RpcServer {
             Object.keys(_funcDefParams.properties).map(function(p) {
               const idx = _funcDefinedParams!.indexOf(p);
               if (idx === -1)
-                throw new AmqpRpcUnknowParameterError(`unknown parameter: ${p} in ${functionDefintion.name}`);
+                throw new AmqpRpcUnknowParameterError(`unknown parameter: ${p} in ${functionDefintion.method}`);
             });
         
             _validate = this._ajv.compile(_funcDefParams);
         }
 
-        this._serverFunctions[functionDefintion.name] = {
+        this._serverFunctions[functionDefintion.method] = {
             callback,
             validate: _validate!,
             arguments: _funcDefinedParams

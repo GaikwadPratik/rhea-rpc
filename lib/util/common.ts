@@ -9,6 +9,7 @@ export interface ServerOptions {
 }
 
 export enum RpcRequestType {
+    Obsolete = 'Obsolete', //compatibility with old rpc. will be removed after a year
     Call = 'Call',
     Notify = 'Notify'
 }
@@ -19,7 +20,7 @@ export enum RpcResponseCode {
 }
 
 export interface ServerFunctionDefinition {
-    name: string,
+    method: string,
     params?: {
         type: string,
         properties: any,

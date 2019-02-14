@@ -5,7 +5,7 @@ import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors'
 interface PendingRequest {
     id: string,
     name: string,
-    args: Array<any>,
+    params: Array<any>,
     type: RpcRequestType
 }
 
@@ -38,7 +38,7 @@ export class RpcClient {
         const _message: Message = {
             reply_to: request.type === RpcRequestType.Call ? this._receiver.address : '',
             body: {
-                args: request.args,
+                params: request.params,
                 type: request.type
             },
             subject: request.name,
@@ -95,17 +95,17 @@ export class RpcClient {
           }
     }
 
-    public async call(functionName: string, ...args: any) {
+    public async call(functionName: string, ...params: any) {
         if (this._receiver.isOpen() && this._sender.isOpen()) {
-            return this._sendRequest({id: generate_uuid(), name: functionName, args, type: RpcRequestType.Call});
+            return this._sendRequest({id: generate_uuid(), name: functionName, params, type: RpcRequestType.Call});
         } else {
             throw new Error('Receiver or Sender is not yet open');
         }
     }
 
-    public async notify(functionName: string, ...args: any) {
+    public async notify(functionName: string, ...params: any) {
         if (this._sender.isOpen()) {
-            await this._sendRequest({id: generate_uuid(), name: functionName, args, type: RpcRequestType.Notify});
+            await this._sendRequest({id: generate_uuid(), name: functionName, params, type: RpcRequestType.Notify});
         } else {
             throw new Error('Sender is not open');
         }
