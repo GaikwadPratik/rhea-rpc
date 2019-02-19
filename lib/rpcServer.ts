@@ -76,7 +76,7 @@ export class RpcServer {
         }
 
         if (typeof this._serverFunctions[_reqMessage.body.method!] === 'undefined' || this._serverFunctions[_reqMessage.body.method!] === null) {
-            return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcUnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
+            return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcUnknownFunctionError(`${_reqMessage.body.method} not bound to server`), _reqMessage.body.type);
         }
 
         const funcCall = this._serverFunctions[_reqMessage.body.method!];
