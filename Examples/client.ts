@@ -8,10 +8,15 @@ async function Main() {
         password: ''
     };
     const _client = await new RheaRpc().createAmqpClient(_connectionOptions);
-    const _rpcClient  = await _client.createRpcClient('rpc');
+    const _rpcClient  = await _client.createRpcClient('amq.topic');
     console.log(await _rpcClient.call('namedParams', { firstName: '123', lastName: '456'}));
     console.log(await _rpcClient.call('simpleParams', '123', '456'));
     console.log(await _rpcClient.call('noParams'));
+
+    const _rpcClientWithSubject  = await _client.createRpcClient('amq.topic/test');
+    console.log(await _rpcClientWithSubject.call('namedParams', { firstName: '123', lastName: '456'}));
+    console.log(await _rpcClientWithSubject.call('simpleParams', '123', '456'));
+    console.log(await _rpcClientWithSubject.call('noParams'));
 }
 
 Main()

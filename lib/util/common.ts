@@ -39,5 +39,6 @@ export enum ErrorCodes {
     AmqpRpcParamsMissingProperties = 'AmqpRpcParamsMissingProperties',
     AmqpRpcUnknownParameter = 'AmqpRpcUnknownParameter',
     AmqpRpcUnknownFunction = 'AmqpRpcUnknownFunction',
-    AmqpRpcFunctionDefinitionValidationError = 'AmqpRpcFunctionDefinitionValidationError'
+    AmqpRpcFunctionDefinitionValidationError = 'AmqpRpcFunctionDefinitionValidationError',
+    AmqpRpcInvalidNodeAddressError = 'AmqpRpcInvalidNodeAddressError'
 }
