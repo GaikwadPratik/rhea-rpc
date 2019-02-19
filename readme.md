@@ -12,3 +12,4 @@ TODO
 - [ ] Add null check on all the properties before utilizing
 - [ ] Add logging
 - [x] Add `notify` in `RpcClient`
+- [x] Add support for subject based queue in the form of `queuename/subject`

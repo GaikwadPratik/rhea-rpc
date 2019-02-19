@@ -1,9 +1,11 @@
-import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents } from "rhea-promise";
+import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents, types } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv from "ajv";
-import { AmqpRpcUnknownFunctionError, AmqpRpcFunctionDefinitionValidationError, AmqpRpcMissingFunctionDefinitionError, AmqpRpcMissingFunctionNameError, 
-            AmqpRpcDuplicateFunctionDefinitionError, AmqpRpcParamsNotObjectError, AmqpRpcParamsMissingPropertiesError, AmqpRpcUnknowParameterError 
-        } from './util/errors';
+import {
+    AmqpRpcUnknownFunctionError, AmqpRpcFunctionDefinitionValidationError, AmqpRpcMissingFunctionDefinitionError, AmqpRpcMissingFunctionNameError,
+    AmqpRpcDuplicateFunctionDefinitionError, AmqpRpcParamsNotObjectError, AmqpRpcParamsMissingPropertiesError, AmqpRpcUnknowParameterError
+} from './util/errors';
+import { parseNodeAddress } from './util';
 
 export class RpcServer {
     private _connection: Connection;
@@ -11,7 +13,7 @@ export class RpcServer {
     private _receiver!: Receiver;
     private _amqpNode: string = '';
     private _serverFunctions: {
-        [name:string]: {
+        [name: string]: {
             callback: Function,
             validate: Ajv.ValidateFunction,
             arguments: any
@@ -21,6 +23,7 @@ export class RpcServer {
     private readonly STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
     private readonly ARGUMENT_NAMES = /([^\s,{}]+)/mg;
     private readonly _options!: ServerOptions | undefined;
+    private _subject = '';
 
     constructor(amqpNode: string, connection: Connection, options?: ServerOptions) {
         this._amqpNode = amqpNode;
@@ -38,31 +41,26 @@ export class RpcServer {
     }
 
     private async _processRequest(context: EventContext) {
-        if(typeof context.message === 'undefined' || context.message === null) {
-            context.delivery!.release({undeliverable_here: true});
+        if (typeof context.message === 'undefined' || context.message === null) {
+            context.delivery!.release({ undeliverable_here: true });
             return;
         }
         const _reqMessage: Message = context.message;
         if (typeof _reqMessage.body === 'undefined'
             || _reqMessage.body === null) {
-                //TODO: Log message is missing subject or body
-            context.delivery!.release({undeliverable_here: true});
+            //TODO: Log message is missing subject or body
+            context.delivery!.release({ undeliverable_here: true });
             return;
         }
         const _replyTo = _reqMessage.reply_to!,
             _correlationId = _reqMessage.correlation_id!;
 
-        if(typeof _reqMessage.body === 'string') {
+        if (typeof _reqMessage.body === 'string') {
             try {
                 _reqMessage.body = JSON.parse(_reqMessage.body);
             } catch (error) {
                 return await this._sendResponse(_replyTo, _correlationId as string, error, _replyTo !== '' ? RpcRequestType.Call : RpcRequestType.Notify);
             }
-        }
-
-        //compatibility with old rpc. will be removed after a year
-        if(typeof _reqMessage.subject !== 'string') {
-            _reqMessage.subject = _reqMessage.body.method;
         }
 
         //compatibility with old rpc. will be removed after a year
@@ -77,17 +75,17 @@ export class RpcServer {
             }
         }
 
-        if(typeof this._serverFunctions[_reqMessage.subject!] === 'undefined' || this._serverFunctions[_reqMessage.subject!] === null) {
+        if (typeof this._serverFunctions[_reqMessage.body.method!] === 'undefined' || this._serverFunctions[_reqMessage.body.method!] === null) {
             return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcUnknownFunctionError(`${_reqMessage.subject} not bound to server`), _reqMessage.body.type);
         }
 
-        const funcCall = this._serverFunctions[_reqMessage.subject!];
+        const funcCall = this._serverFunctions[_reqMessage.body.method!];
         let params = _reqMessage.body.params,
             overWriteArgs = false;
-        
+
         if (Array.isArray(params) && params.length > 0) {
             if (!this._isPlainObject(params[0])) { // convert to named parameters
-                params = funcCall.arguments.reduce(function(obj: any, p: any, idx: any) {
+                params = funcCall.arguments.reduce(function (obj: any, p: any, idx: any) {
                     obj[p] = idx > params.length ? null : params[idx];
                     return obj;
                 }, {});
@@ -108,7 +106,7 @@ export class RpcServer {
         try {
             let _response: any;
             if (!overWriteArgs) {
-                const args = funcCall.arguments.map(function(p: any) { return params[p]; });
+                const args = funcCall.arguments.map(function (p: any) { return params[p]; });
                 _response = await funcCall.callback.apply(null, args);
             } else {
                 _response = await funcCall.callback.call(null, params);
@@ -145,8 +143,8 @@ export class RpcServer {
             const _resMessage: Message = {
                 to: replyTo,
                 correlation_id: correlationId,
-                body: msg,
-                subject: _isError ? RpcResponseCode.ERROR : RpcResponseCode.OK
+                body: { responseCode: _isError ? RpcResponseCode.ERROR : RpcResponseCode.OK, responseMessage: msg },
+                subject: this._subject
             };
             this._sender.send(_resMessage);
         }
@@ -162,9 +160,9 @@ export class RpcServer {
         return result;
     }
 
-    private _isPlainObject = function(obj: any) {
+    private _isPlainObject = function (obj: any) {
         return Object.prototype.toString.call(obj) === '[object Object]';
-      };
+    };
 
     public bind(functionDefintion: ServerFunctionDefinition, callback: Function) {
         if (typeof functionDefintion === 'undefined' || functionDefintion === null) {
@@ -191,20 +189,20 @@ export class RpcServer {
 
         if (typeof _funcDefParams !== 'undefined' && _funcDefParams !== null) {
             if (!this._isPlainObject(_funcDefParams)) {
-              throw new AmqpRpcParamsNotObjectError('not a plain object');
+                throw new AmqpRpcParamsNotObjectError('not a plain object');
             }
-        
+
             if (typeof _funcDefParams.properties === 'undefined' || _funcDefParams.properties === null) {
-              throw new AmqpRpcParamsMissingPropertiesError('missing `properties`');
+                throw new AmqpRpcParamsMissingPropertiesError('missing `properties`');
             }
-        
+
             // do a basic check to see if we know about all named parameters
-            Object.keys(_funcDefParams.properties).map(function(p) {
-              const idx = _funcDefinedParams!.indexOf(p);
-              if (idx === -1)
-                throw new AmqpRpcUnknowParameterError(`unknown parameter: ${p} in ${functionDefintion.method}`);
+            Object.keys(_funcDefParams.properties).map(function (p) {
+                const idx = _funcDefinedParams!.indexOf(p);
+                if (idx === -1)
+                    throw new AmqpRpcUnknowParameterError(`unknown parameter: ${p} in ${functionDefintion.method}`);
             });
-        
+
             _validate = this._ajv.compile(_funcDefParams);
         }
 
@@ -216,17 +214,23 @@ export class RpcServer {
     }
 
     public async connect() {
+        const nodeAddress = parseNodeAddress(this._amqpNode);
         const _receiverOptions: ReceiverOptions = {};
+        if (nodeAddress.subject.length > 0) {
+            this._subject = nodeAddress.subject;
+            _receiverOptions.source = {
+                address: nodeAddress.address,
+                filter: { 'apache.org:legacy-amqp-topic-binding:string': types.wrap_described(nodeAddress.subject, 0x468C00000001) } //once https://github.com/amqp/rhea/pull/192 is merged, switch to types.wrap_symbol('apache.org:legacy-amqp-topic-binding:string') instead of 0x468C00000001
+            };
+        } else {
+            _receiverOptions.source = {
+                address: nodeAddress.address
+            };
+        }
         if (typeof this._options !== 'undefined' && this._options !== null && this._options.receiverOptions) {
             Object.assign(_receiverOptions, _receiverOptions, this._options.receiverOptions);
         }
 
-        Object.assign(_receiverOptions, {
-            source: {
-                address: this._amqpNode
-            }
-        });
-        
         const _senderOptions: SenderOptions = {
             target: {}
         };
