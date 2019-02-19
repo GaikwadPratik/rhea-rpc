@@ -102,7 +102,7 @@ export class RpcClient {
         }
     }
 
-    public async call(functionName: string, ...params: any) {
+    public async call(functionName: string, params?: any) {
         if (this._receiver.isOpen() && this._sender.isOpen()) {
             return this._sendRequest({ id: generate_uuid(), name: functionName, params, type: RpcRequestType.Call });
         } else {
@@ -110,7 +110,7 @@ export class RpcClient {
         }
     }
 
-    public async notify(functionName: string, ...params: any) {
+    public async notify(functionName: string, params?: any) {
         if (this._sender.isOpen()) {
             await this._sendRequest({ id: generate_uuid(), name: functionName, params, type: RpcRequestType.Notify });
         } else {
