@@ -4,7 +4,7 @@ export interface MessageOptions {
 }
 
 export interface ServerOptions {
-    interceptor?(delivery: Delivery, requestMessage: any): boolean,
+    interceptor?(delivery: Delivery, requestMessage: any): Promise<boolean>,
     receiverOptions?: ReceiverOptions
 }
 
