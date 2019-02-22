@@ -63,6 +63,10 @@ export class RpcServer {
             }
         }
 
+        if (typeof _reqMessage.body.method !== 'string' || _reqMessage.body.method.length === 0) {
+            return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcMissingFunctionNameError(`${_reqMessage.body.method} not bound to server`), _reqMessage.body.type);
+        }
+
         //compatibility with old rpc. will be removed after a year
         if (typeof _reqMessage.body.type !== 'string' || !Object.values(RpcRequestType).includes(_reqMessage.body.type)) {
             _reqMessage.body.type = RpcRequestType.Obsolete;
@@ -75,11 +79,11 @@ export class RpcServer {
             }
         }
 
-        if (typeof this._serverFunctions[_reqMessage.body.method!] === 'undefined' || this._serverFunctions[_reqMessage.body.method!] === null) {
+        if (typeof this._serverFunctions[_reqMessage.body.method] === 'undefined' || this._serverFunctions[_reqMessage.body.method] === null) {
             return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcUnknownFunctionError(`${_reqMessage.body.method} not bound to server`), _reqMessage.body.type);
         }
 
-        const funcCall = this._serverFunctions[_reqMessage.body.method!];
+        const funcCall = this._serverFunctions[_reqMessage.body.method];
         let params = _reqMessage.body.params,
             overWriteArgs = false;
 
