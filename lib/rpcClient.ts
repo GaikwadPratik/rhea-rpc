@@ -54,6 +54,7 @@ export class RpcClient {
                 this._requestPendingResponse[request.id] = {
                     timeout: setTimeout(() => {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
+                            clearTimeout(this._requestPendingResponse[request.id].timeout);
                             delete this._requestPendingResponse[request.id];
                         }
                         this.disconnect();
