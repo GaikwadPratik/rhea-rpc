@@ -1,3 +1,7 @@
+import sourceMapSupport from 'source-map-support'
+sourceMapSupport.install({
+  handleUncaughtExceptions: false
+});
 import { Connection, ConnectionOptions } from "rhea-promise";
 import { RpcClient } from "./lib/rpcClient";
 import { RpcServer } from "./lib/rpcServer";
