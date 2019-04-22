@@ -1,0 +1,35 @@
+language: 
+  - node_js
+
+node_js:
+  - '10'
+
+sudo: required
+dist: xenial
+group: travis_latest
+
+addons:
+  apt:
+   update: true        
+   sources:        
+   - ubuntu-toolchain-r-test
+   - sourceline: 'ppa:qpid/released'
+
+  packages:        
+   - gcc-4.8        
+   - g++-4.8
+   - qpidd
+   - qpid-tools        
+   - libvirt-dev
+   - libsystemd-dev
+
+env:
+  - CXX=g++-4.8
+
+before_script:
+  - echo "auth=no" | sudo tee -a /etc/qpid/qpidd.conf
+  - echo "auth=no" | sudo tee -a /etc/qpidd.conf
+  - sudo systemctl restart qpidd
+
+script:
+  - npm test
