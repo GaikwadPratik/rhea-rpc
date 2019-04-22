@@ -64,7 +64,7 @@ export class RpcServer {
         }
 
         if (typeof _reqMessage.body.method !== 'string' || _reqMessage.body.method.length === 0) {
-            return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcMissingFunctionNameError(`${_reqMessage.body.method} not bound to server`), _reqMessage.body.type);
+            return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcMissingFunctionNameError(`${_reqMessage.body.method}`), _reqMessage.body.type);
         }
 
         //compatibility with old rpc. will be removed after a year
@@ -123,6 +123,9 @@ export class RpcServer {
             }
             return await this._sendResponse(_replyTo, _correlationId as string, _response, _reqMessage.body.type);
         } catch (error) {
+            if (!(error instanceof Error)) {
+                error = new Error(error);
+            }
             return await this._sendResponse(_replyTo, _correlationId as string, error, _reqMessage.body.type);
         }
     }
