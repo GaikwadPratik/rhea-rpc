@@ -10,20 +10,22 @@ interface PendingRequest {
     type: RpcRequestType
 }
 
+type PendingResponse<T> = {
+    [x: string]: {
+        timeout: NodeJS.Timeout,
+        response: {
+            resolve: (value?: T | PromiseLike<T> | undefined) => void;
+            reject: (reason?: any) => void;
+        }
+    }   
+}
+
 export class RpcClient {
     private _connection: Connection;
     private _sender!: Sender;
     private _receiver!: Receiver;
     private _amqpNode: string = '';
-    private _requestPendingResponse: {
-        [x: string]: {
-            timeout: NodeJS.Timeout,
-            response: {
-                resolve: (value?: {} | PromiseLike<{}> | undefined) => void;
-                reject: (reason?: any) => void;
-            }
-        };
-    } = {};
+    private _requestPendingResponse: PendingResponse<T> = {};
     private _messageOptions: MessageOptions = {
         timeout: 30000
     };
@@ -36,7 +38,7 @@ export class RpcClient {
         this._connection = connection;
     }
 
-    private async _sendRequest(request: PendingRequest) {
+    private async _sendRequest<T>(request: PendingRequest): Promise<T | undefined> {
         const _message: Message = {
             reply_to: request.type === RpcRequestType.Call ? this._receiver.address : '',
             body: {
@@ -50,7 +52,7 @@ export class RpcClient {
             ttl: this._messageOptions.timeout
         }
         if (request.type === RpcRequestType.Call) {
-            return new Promise((resolve, reject) => {
+            return new Promise<T>((resolve, reject) => {
                 this._requestPendingResponse[request.id] = {
                     timeout: setTimeout(() => {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
@@ -85,6 +87,7 @@ export class RpcClient {
             return;
         }
         const callback = this._requestPendingResponse[id].response;
+        clearTimeout(this._requestPendingResponse[id].timeout);
         delete this._requestPendingResponse[id];
         if (typeof callback === 'undefined' || callback === null) {
             console.log(`No callback found for ${id}`);
@@ -103,9 +106,9 @@ export class RpcClient {
         }
     }
 
-    public async call(functionName: string, params?: any) {
+    public async call<T>(functionName: string, params?: any): Promise<T|undefined> {
         if (this._receiver.isOpen() && this._sender.isOpen()) {
-            return this._sendRequest({ id: generate_uuid(), name: functionName, params, type: RpcRequestType.Call });
+            return this._sendRequest<T>({ id: generate_uuid(), name: functionName, params, type: RpcRequestType.Call });
         } else {
             throw new Error('Receiver or Sender is not yet open');
         }
