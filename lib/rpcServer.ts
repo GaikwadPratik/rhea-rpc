@@ -12,13 +12,11 @@ export class RpcServer {
     private _sender!: Sender;
     private _receiver!: Receiver;
     private _amqpNode: string = '';
-    private _serverFunctions: {
-        [name: string]: {
+    private _serverFunctions = new Map<string, {
             callback: Function,
             validate: Ajv.ValidateFunction,
             arguments: any
-        }
-    } = {};
+        }>();
     private _ajv: Ajv.Ajv;
     private readonly STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
     private readonly ARGUMENT_NAMES = /([^\s,{}]+)/mg;
@@ -79,11 +77,11 @@ export class RpcServer {
             }
         }
 
-        if (typeof this._serverFunctions[_reqMessage.body.method] === 'undefined' || this._serverFunctions[_reqMessage.body.method] === null) {
+        if (! this._serverFunctions.has(_reqMessage.body.method)) {
             return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcUnknownFunctionError(`${_reqMessage.body.method} not bound to server`), _reqMessage.body.type);
         }
 
-        const funcCall = this._serverFunctions[_reqMessage.body.method];
+        const funcCall = this._serverFunctions.get(_reqMessage.body.method)!;
         let params = _reqMessage.body.params,
             overWriteArgs = false;
 
@@ -219,11 +217,11 @@ export class RpcServer {
             _validate = this._ajv.compile(_funcDefParams);
         }
 
-        this._serverFunctions[functionDefintion.method] = {
+        this._serverFunctions.set(functionDefintion.method, {
             callback,
             validate: _validate!,
             arguments: _funcDefinedParams
-        };
+        });
     }
 
     public async connect() {
