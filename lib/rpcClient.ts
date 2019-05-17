@@ -40,7 +40,7 @@ export class RpcClient {
         const _message: Message = {
             reply_to: request.type === RpcRequestType.Call ? this._receiver.address : '',
             body: {
-                params: request.params,
+                parameters: request.params,
                 type: request.type,
                 method: request.name,
             },
