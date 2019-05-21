@@ -38,6 +38,7 @@ export class RpcClient {
 
     private async _sendRequest(request: PendingRequest) {
         const _message: Message = {
+            to: this._amqpNode,
             reply_to: request.type === RpcRequestType.Call ? this._receiver.address : '',
             body: {
                 parameters: request.params,
@@ -121,11 +122,12 @@ export class RpcClient {
 
     public async connect() {
         const nodeAddress = parseNodeAddress(this._amqpNode);
+        this._amqpNode = nodeAddress.address;
         if (nodeAddress.subject.length > 0) {
             this._subject = nodeAddress.subject;
         }
         const _senderOptions: SenderOptions = {
-            target: nodeAddress.address
+            target: {}
         };
         const _receiverOptions: ReceiverOptions = {
             source: {
