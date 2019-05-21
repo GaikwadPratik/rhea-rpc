@@ -185,7 +185,7 @@ export class RpcServer {
         }
 
         if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.method)) {
-            throw new AmqpRpcDuplicateFunctionDefinitionError('Duplicate method being bound to RPC server');
+            throw new AmqpRpcDuplicateFunctionDefinitionError(`${functionDefintion.method} is already bound to RPC server`);
         }
 
         let _funcDefParams = null,
