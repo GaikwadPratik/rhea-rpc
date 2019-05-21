@@ -1,6 +1,6 @@
 {
   "name": "rhea-rpc",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "A promise based RPC server client communication on qpid using \\`rhea\\` amqp library over amqp 1.0 protocol",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
