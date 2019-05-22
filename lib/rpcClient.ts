@@ -41,7 +41,7 @@ export class RpcClient {
             to: this._amqpNode,
             reply_to: request.type === RpcRequestType.Call ? this._receiver.address : '',
             body: {
-                parameters: request.params,
+                params: request.params,
                 type: request.type,
                 method: request.name,
             },

@@ -82,7 +82,7 @@ export class RpcServer {
         }
 
         const funcCall = this._serverFunctions.get(_reqMessage.body.method)!;
-        let params = _reqMessage.body.parameters || _reqMessage.body.params,
+        let params = _reqMessage.body.params,
             overWriteArgs = false;
 
         if (typeof params !== 'undefined' && params !== null) {
