@@ -155,7 +155,8 @@ export class RpcServer {
                 to: replyTo,
                 correlation_id: correlationId,
                 body: { responseCode: _isError ? RpcResponseCode.ERROR : RpcResponseCode.OK, responseMessage: msg },
-                subject: this._subject
+                subject: this._subject,
+                ttl: 10000
             };
             this._sender.send(_resMessage);
         }
