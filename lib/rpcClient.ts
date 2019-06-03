@@ -58,7 +58,7 @@ export class RpcClient {
                             clearTimeout(this._requestPendingResponse[request.id].timeout);
                             delete this._requestPendingResponse[request.id];
                         }
-                        this.disconnect();
+                        //this.disconnect();
                         return reject(new AmqpRpcRequestTimeoutError(`Request timed out while executing: '${request.name}'`));
                     }, this._messageOptions.timeout),
                     response: { resolve, reject }
