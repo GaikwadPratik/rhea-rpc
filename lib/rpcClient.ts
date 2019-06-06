@@ -137,7 +137,13 @@ export class RpcClient {
         };
 
         this._sender = await this._connection.createSender(_senderOptions);
+        if (!this._sender.isOpen()) {
+            this._sender = await this._connection.createSender(_senderOptions);
+        }
         this._receiver = await this._connection.createReceiver(_receiverOptions);
+        if (!this._receiver.isOpen()) {
+            this._receiver = await this._connection.createReceiver(_receiverOptions);
+        }
         this._receiver.on(ReceiverEvents.message, this._processResponse.bind(this));
         this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
             throw context.error;
