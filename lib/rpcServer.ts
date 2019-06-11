@@ -1,4 +1,4 @@
-import { Connection, EventContext, Receiver, Sender, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents, types } from "rhea-promise";
+import { Connection, EventContext, Receiver, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents, types, generate_uuid } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv from "ajv";
 import {
@@ -9,7 +9,6 @@ import { parseNodeAddress } from './util';
 
 export class RpcServer {
     private _connection: Connection;
-    private _sender!: Sender;
     private _receiver!: Receiver;
     private _amqpNode: string = '';
     private _serverFunctions = new Map<string, {
@@ -159,13 +158,27 @@ export class RpcServer {
                 ttl: 10000
             };
             const _senderOptions: SenderOptions = {
-                target: {}
+                target: {},
+                source: {
+                    dynamic: true,
+                    address: this._amqpNode
+                },
+                name: `${generate_uuid()}-${this._amqpNode}-sender-server`,
+                onSessionError: (context: EventContext) => {
+                    throw JSON.stringify(context);
+                }
             };
-            this._sender = await this._connection.createSender(_senderOptions);
-            if (!this._sender.isOpen()) {
-                this._sender = await this._connection.createSender(_senderOptions);
+            let _sender = await this._connection.createSender(_senderOptions);
+            _sender.on(SenderEvents.senderError, (context: EventContext) => {
+                throw JSON.stringify(context);
+            });
+            if (!_sender.isOpen()) {
+                _sender = await this._connection.createSender(_senderOptions);
             }
-            this._sender.send(_resMessage);
+            _sender.send(_resMessage);
+            if (!_sender.isClosed()) {
+                await _sender.close();
+            }
         }
     }
 
@@ -243,28 +256,28 @@ export class RpcServer {
             this._subject = nodeAddress.subject;
             _receiverOptions.source = {
                 address: nodeAddress.address,
-                filter: { 'apache.org:legacy-amqp-topic-binding:string': types.wrap_described(nodeAddress.subject, 0x468C00000001) } //once https://github.com/amqp/rhea/pull/192 is merged, switch to types.wrap_symbol('apache.org:legacy-amqp-topic-binding:string') instead of 0x468C00000001
+                filter: { 'apache.org:legacy-amqp-direct-binding:string': types.wrap_described(nodeAddress.subject, 0x468C00000001) } //once https://github.com/amqp/rhea/pull/192 is merged, switch to types.wrap_symbol('apache.org:legacy-amqp-topic-binding:string') instead of 0x468C00000001
             };
         } else {
             _receiverOptions.source = {
                 address: nodeAddress.address
             };
         }
+        _receiverOptions.name = `${generate_uuid()}-${this._amqpNode}-receiver-server`;
+        _receiverOptions.onSessionError = (context: EventContext) => {
+            throw JSON.stringify(context);
+        }
         this._receiver = await this._connection.createReceiver(_receiverOptions);
         if (!this._receiver.isOpen()) {
             this._receiver = await this._connection.createReceiver(_receiverOptions);
         }
         this._receiver.on(ReceiverEvents.message, this._processRequest.bind(this));
-        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
-            throw context.error;
-        });
-        this._sender.on(SenderEvents.senderError, (context: EventContext) => {
-            throw context.error;
+        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {            
+            throw JSON.stringify(context);
         });
     }
 
     public async disconnect() {
-        await this._sender.close();
         await this._receiver.close();
     }
 }
