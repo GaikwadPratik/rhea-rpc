@@ -127,12 +127,21 @@ export class RpcClient {
             this._subject = nodeAddress.subject;
         }
         const _senderOptions: SenderOptions = {
-            target: {}
+            target: {},
+            name: `${generate_uuid()}-${this._amqpNode}-sender-client`,
+            onSessionError: (context: EventContext) => {
+                throw JSON.stringify(context);
+            }
         };
         const _receiverOptions: ReceiverOptions = {
             source: {
                 dynamic: true,
-                address: nodeAddress.address
+                address: nodeAddress.address,
+                //dynamic_node_properties: {'lifetime-policy': types.wrap_described([], 'amqp: delete-on-no-links-or-messages:list')},
+            },
+            name: `${generate_uuid()}-${this._amqpNode}-receiver-client`,
+            onSessionError: (context: EventContext) => {
+                throw JSON.stringify(context);
             }
         };
 
