@@ -158,6 +158,13 @@ export class RpcServer {
                 subject: this._subject,
                 ttl: 10000
             };
+            const _senderOptions: SenderOptions = {
+                target: {}
+            };
+            this._sender = await this._connection.createSender(_senderOptions);
+            if (!this._sender.isOpen()) {
+                this._sender = await this._connection.createSender(_senderOptions);
+            }
             this._sender.send(_resMessage);
         }
     }
@@ -227,7 +234,11 @@ export class RpcServer {
 
     public async connect() {
         const nodeAddress = parseNodeAddress(this._amqpNode);
-        const _receiverOptions: ReceiverOptions = {};
+        const _receiverOptions: ReceiverOptions = typeof this._options !== 'undefined' && this._options !== null
+            && typeof this._options.receiverOptions !== 'undefined' && this._options.receiverOptions !== null
+            && Object.keys(this._options.receiverOptions).length > 0
+            ? this._options.receiverOptions
+            : {};
         if (nodeAddress.subject.length > 0) {
             this._subject = nodeAddress.subject;
             _receiverOptions.source = {
@@ -239,15 +250,10 @@ export class RpcServer {
                 address: nodeAddress.address
             };
         }
-        if (typeof this._options !== 'undefined' && this._options !== null && this._options.receiverOptions) {
-            Object.assign(_receiverOptions, _receiverOptions, this._options.receiverOptions);
-        }
-
-        const _senderOptions: SenderOptions = {
-            target: {}
-        };
         this._receiver = await this._connection.createReceiver(_receiverOptions);
-        this._sender = await this._connection.createSender(_senderOptions);
+        if (!this._receiver.isOpen()) {
+            this._receiver = await this._connection.createReceiver(_receiverOptions);
+        }
         this._receiver.on(ReceiverEvents.message, this._processRequest.bind(this));
         this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
             throw context.error;
