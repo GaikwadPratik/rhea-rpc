@@ -1,4 +1,4 @@
-import { Connection, EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptions, ReceiverOptions, SenderEvents } from "rhea-promise";
+import { Connection, EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptions, ReceiverOptions, SenderEvents, types } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
 import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors';
 import { parseNodeAddress } from './util';
@@ -28,6 +28,9 @@ export class RpcClient {
         timeout: 30000
     };
     private _subject = '';
+    private _senderName = `${generate_uuid()}-${this._amqpNode}-sender-client`;
+    private _receiverName = `${generate_uuid()}-${this._amqpNode}-receiver-client`;
+
     constructor(amqpNode: string, connection: Connection, options?: MessageOptions) {
         this._amqpNode = amqpNode;
         if (typeof options !== 'undefined' && options !== null) {
@@ -128,20 +131,24 @@ export class RpcClient {
         }
         const _senderOptions: SenderOptions = {
             target: {},
-            name: `${generate_uuid()}-${this._amqpNode}-sender-client`,
+            name: this._senderName,
             onSessionError: (context: EventContext) => {
-                throw JSON.stringify(context);
+                const error = context.session && context.session.error;
+                (error as any).code = `${this._senderName}-SessionError`;
+                throw error;
             }
         };
         const _receiverOptions: ReceiverOptions = {
             source: {
                 dynamic: true,
                 address: nodeAddress.address,
-                //dynamic_node_properties: {'lifetime-policy': types.wrap_described([], 'amqp: delete-on-no-links-or-messages:list')},
+                dynamic_node_properties: {'lifetime-policy': types.wrap_described([], 'amqp:delete-on-no-links-or-messages:list')},
             },
-            name: `${generate_uuid()}-${this._amqpNode}-receiver-client`,
+            name: this._receiverName,
             onSessionError: (context: EventContext) => {
-                throw JSON.stringify(context);
+                const error = context.session && context.session.error;
+                (error as any).code = `${this._receiverName}-SessionError`;
+                throw error;
             }
         };
 
@@ -155,10 +162,14 @@ export class RpcClient {
         }
         this._receiver.on(ReceiverEvents.message, this._processResponse.bind(this));
         this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
-            throw context.error;
+            const error = context.receiver && context.receiver.error;
+            (error as any).code = `${this._receiverName}-receiverError`;
+            throw error;
         });
         this._sender.on(SenderEvents.senderError, (context: EventContext) => {
-            throw context.error;
+            const error = context.sender && context.sender.error;
+            (error as any).code = `${this._senderName}-SenderError`;
+            throw error;
         });
     }
 

@@ -12,15 +12,17 @@ export class RpcServer {
     private _receiver!: Receiver;
     private _amqpNode: string = '';
     private _serverFunctions = new Map<string, {
-            callback: Function,
-            validate: Ajv.ValidateFunction,
-            arguments: any
-        }>();
+        callback: Function,
+        validate: Ajv.ValidateFunction,
+        arguments: any
+    }>();
     private _ajv: Ajv.Ajv;
     private readonly STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
     private readonly ARGUMENT_NAMES = /([^\s,{}]+)/mg;
     private readonly _options!: ServerOptions | undefined;
     private _subject = '';
+    private _receiverName = `${generate_uuid()}-${this._amqpNode}-receiver-server`;
+    private _senderName = `${generate_uuid()}-${this._amqpNode}-sender-server`;
 
     constructor(amqpNode: string, connection: Connection, options?: ServerOptions) {
         this._amqpNode = amqpNode;
@@ -76,7 +78,7 @@ export class RpcServer {
             }
         }
 
-        if (! this._serverFunctions.has(_reqMessage.body.method)) {
+        if (!this._serverFunctions.has(_reqMessage.body.method)) {
             return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcUnknownFunctionError(`${_reqMessage.body.method} not bound to server`), _reqMessage.body.type);
         }
 
@@ -163,14 +165,18 @@ export class RpcServer {
                     dynamic: true,
                     address: this._amqpNode
                 },
-                name: `${generate_uuid()}-${this._amqpNode}-sender-server`,
+                name: this._senderName,
                 onSessionError: (context: EventContext) => {
-                    throw JSON.stringify(context);
+                    const error = context.session && context.session.error;
+                    (error as any).code = `${this._senderName}-SessionError`;
+                    throw error;
                 }
             };
             let _sender = await this._connection.createSender(_senderOptions);
             _sender.on(SenderEvents.senderError, (context: EventContext) => {
-                throw JSON.stringify(context);
+                const error = context.sender && context.sender.error;
+                (error as any).code = `${this._senderName}-SenderError`;
+                throw error;
             });
             if (!_sender.isOpen()) {
                 _sender = await this._connection.createSender(_senderOptions);
@@ -256,24 +262,28 @@ export class RpcServer {
             this._subject = nodeAddress.subject;
             _receiverOptions.source = {
                 address: nodeAddress.address,
-                filter: { 'apache.org:legacy-amqp-direct-binding:string': types.wrap_described(nodeAddress.subject, 0x468C00000001) } //once https://github.com/amqp/rhea/pull/192 is merged, switch to types.wrap_symbol('apache.org:legacy-amqp-topic-binding:string') instead of 0x468C00000001
+                filter: { 'direct-binding': types.wrap_described(nodeAddress.subject, 'apache.org:legacy-amqp-direct-binding:string') }
             };
         } else {
             _receiverOptions.source = {
                 address: nodeAddress.address
             };
         }
-        _receiverOptions.name = `${generate_uuid()}-${this._amqpNode}-receiver-server`;
+        _receiverOptions.name = this._receiverName;
         _receiverOptions.onSessionError = (context: EventContext) => {
-            throw JSON.stringify(context);
+            const error = context.session && context.session.error;
+            (error as any).code = `${this._receiverName}-SessionError`;
+            throw error;
         }
         this._receiver = await this._connection.createReceiver(_receiverOptions);
         if (!this._receiver.isOpen()) {
             this._receiver = await this._connection.createReceiver(_receiverOptions);
         }
         this._receiver.on(ReceiverEvents.message, this._processRequest.bind(this));
-        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {            
-            throw JSON.stringify(context);
+        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
+            const error = context.receiver && context.receiver.error;
+            (error as any).code = `${this._receiverName}-receiverError`;
+            throw error;
         });
     }
 
