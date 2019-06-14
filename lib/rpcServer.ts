@@ -278,7 +278,6 @@ export class RpcServer {
                 throw error;
             },
             onError: (context: EventContext) => {
-                debugger;
                 const error = context.sender && context.sender.error;
                 (error as any).code = `${this._senderName}-SenderError`;
                 throw error;
@@ -292,7 +291,7 @@ export class RpcServer {
 
     public async disconnect() {
         if (!this._sender.isClosed()) {
-            this._sender.close();
+            await this._sender.close();
         }
         if (!this._receiver.isClosed()) {
             await this._receiver.close();

@@ -1,4 +1,4 @@
-import { EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, SenderEvents, types, Session } from "rhea-promise";
+import { EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, Session } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
 import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors';
 import { parseNodeAddress } from './util';
@@ -61,7 +61,6 @@ export class RpcClient {
                             clearTimeout(this._requestPendingResponse[request.id].timeout);
                             delete this._requestPendingResponse[request.id];
                         }
-                        //this.disconnect();
                         return reject(new AmqpRpcRequestTimeoutError(`Request timed out while executing: '${request.name}'`));
                     }, this._messageOptions.timeout),
                     response: { resolve, reject }
@@ -136,13 +135,17 @@ export class RpcClient {
         const _receiverOptions: ReceiverOptionsWithSession = {
             source: {
                 dynamic: true,
-                address: nodeAddress.address,
-                dynamic_node_properties: {'lifetime-policy': types.wrap_described([], 'amqp:delete-on-no-links-or-messages:list')},
+                address: nodeAddress.address
             },
             name: this._receiverName,
             onSessionError: (context: EventContext) => {
                 const error = context.session && context.session.error;
                 (error as any).code = `${this._receiverName}-SessionError`;
+                throw error;
+            },
+            onError: (context: EventContext) => {
+                const error = context.receiver && context.receiver.error;
+                (error as any).code = `${this._receiverName}-receiverError`;
                 throw error;
             }
         };
@@ -151,11 +154,6 @@ export class RpcClient {
             this._receiver = await this._session.createReceiver(_receiverOptions);
         }
         this._receiver.on(ReceiverEvents.message, this._processResponse.bind(this));
-        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
-            const error = context.receiver && context.receiver.error;
-            (error as any).code = `${this._receiverName}-receiverError`;
-            throw error;
-        });
         const _senderOptions: SenderOptionsWithSession = {
             target: {},
             name: this._senderName,
@@ -164,24 +162,21 @@ export class RpcClient {
                 (error as any).code = `${this._senderName}-SessionError`;
                 throw error;
             },
-            onClose: () => {
-                throw new Error('Sender closed why?');
+            onError: (context: EventContext) => {
+                const error = context.sender && context.sender.error;
+                (error as any).code = `${this._senderName}-SenderError`;
+                throw error;
             }
         };
         this._sender = await this._session.createSender(_senderOptions);
         if (!this._sender.isOpen()) {
             this._sender = await this._session.createSender(_senderOptions);
         }
-        this._sender.on(SenderEvents.senderError, (context: EventContext) => {
-            const error = context.sender && context.sender.error;
-            (error as any).code = `${this._senderName}-SenderError`;
-            throw error;
-        });
     }
 
     public async disconnect() {
         if (!this._sender.isClosed()) {
-            this._sender.close();
+            await this._sender.close();
         }
         if (!this._receiver.isClosed()) {
             await this._receiver.close();
