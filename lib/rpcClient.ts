@@ -1,4 +1,4 @@
-import { Connection, EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptions, ReceiverOptions, SenderEvents, types } from "rhea-promise";
+import { EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, Session } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
 import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors';
 import { parseNodeAddress } from './util';
@@ -11,9 +11,9 @@ interface PendingRequest {
 }
 
 export class RpcClient {
-    private _connection: Connection;
     private _sender!: Sender;
     private _receiver!: Receiver;
+    private _session: Session;
     private _amqpNode: string = '';
     private _requestPendingResponse: {
         [x: string]: {
@@ -31,12 +31,12 @@ export class RpcClient {
     private _senderName = `${generate_uuid()}-${this._amqpNode}-sender-client`;
     private _receiverName = `${generate_uuid()}-${this._amqpNode}-receiver-client`;
 
-    constructor(amqpNode: string, connection: Connection, options?: MessageOptions) {
+    constructor(amqpNode: string, session: Session, options?: MessageOptions) {
         this._amqpNode = amqpNode;
         if (typeof options !== 'undefined' && options !== null) {
             this._messageOptions = options;
         }
-        this._connection = connection;
+        this._session = session;
     }
 
     private async _sendRequest(request: PendingRequest) {
@@ -61,7 +61,6 @@ export class RpcClient {
                             clearTimeout(this._requestPendingResponse[request.id].timeout);
                             delete this._requestPendingResponse[request.id];
                         }
-                        //this.disconnect();
                         return reject(new AmqpRpcRequestTimeoutError(`Request timed out while executing: '${request.name}'`));
                     }, this._messageOptions.timeout),
                     response: { resolve, reject }
@@ -108,11 +107,13 @@ export class RpcClient {
     }
 
     public async call(functionName: string, params?: any) {
-        if (this._receiver.isOpen() && this._sender.isOpen()) {
-            return this._sendRequest({ id: generate_uuid(), name: functionName, params, type: RpcRequestType.Call });
-        } else {
-            throw new Error('Receiver or Sender is not yet open');
+        if (!this._receiver.isOpen()) {
+            throw new Error('Receiver is not yet open');
         }
+        if (!this._sender.isOpen()) {
+            throw new Error('Sender is not yet open');
+        }
+        return this._sendRequest({ id: generate_uuid(), name: functionName, params, type: RpcRequestType.Call });
     }
 
     public async notify(functionName: string, params?: any) {
@@ -124,57 +125,61 @@ export class RpcClient {
     }
 
     public async connect() {
+        this._receiverName = `${this._receiverName}-${this._amqpNode}`;
+        this._senderName = `${this._senderName}-${this._amqpNode}`;
         const nodeAddress = parseNodeAddress(this._amqpNode);
         this._amqpNode = nodeAddress.address;
         if (nodeAddress.subject.length > 0) {
             this._subject = nodeAddress.subject;
         }
-        const _senderOptions: SenderOptions = {
-            target: {},
-            name: this._senderName,
-            onSessionError: (context: EventContext) => {
-                const error = context.session && context.session.error;
-                (error as any).code = `${this._senderName}-SessionError`;
-                throw error;
-            }
-        };
-        const _receiverOptions: ReceiverOptions = {
+        const _receiverOptions: ReceiverOptionsWithSession = {
             source: {
                 dynamic: true,
-                address: nodeAddress.address,
-                dynamic_node_properties: {'lifetime-policy': types.wrap_described([], 'amqp:delete-on-no-links-or-messages:list')},
+                address: nodeAddress.address
             },
             name: this._receiverName,
             onSessionError: (context: EventContext) => {
                 const error = context.session && context.session.error;
                 (error as any).code = `${this._receiverName}-SessionError`;
                 throw error;
+            },
+            onError: (context: EventContext) => {
+                const error = context.receiver && context.receiver.error;
+                (error as any).code = `${this._receiverName}-receiverError`;
+                throw error;
             }
         };
-
-        this._sender = await this._connection.createSender(_senderOptions);
-        if (!this._sender.isOpen()) {
-            this._sender = await this._connection.createSender(_senderOptions);
-        }
-        this._receiver = await this._connection.createReceiver(_receiverOptions);
+        this._receiver = await this._session.createReceiver(_receiverOptions);
         if (!this._receiver.isOpen()) {
-            this._receiver = await this._connection.createReceiver(_receiverOptions);
+            this._receiver = await this._session.createReceiver(_receiverOptions);
         }
         this._receiver.on(ReceiverEvents.message, this._processResponse.bind(this));
-        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
-            const error = context.receiver && context.receiver.error;
-            (error as any).code = `${this._receiverName}-receiverError`;
-            throw error;
-        });
-        this._sender.on(SenderEvents.senderError, (context: EventContext) => {
-            const error = context.sender && context.sender.error;
-            (error as any).code = `${this._senderName}-SenderError`;
-            throw error;
-        });
+        const _senderOptions: SenderOptionsWithSession = {
+            target: {},
+            name: this._senderName,
+            onSessionError: (context: EventContext) => {
+                const error = context.session && context.session.error;
+                (error as any).code = `${this._senderName}-SessionError`;
+                throw error;
+            },
+            onError: (context: EventContext) => {
+                const error = context.sender && context.sender.error;
+                (error as any).code = `${this._senderName}-SenderError`;
+                throw error;
+            }
+        };
+        this._sender = await this._session.createSender(_senderOptions);
+        if (!this._sender.isOpen()) {
+            this._sender = await this._session.createSender(_senderOptions);
+        }
     }
 
     public async disconnect() {
-        await this._sender.close();
-        await this._receiver.close();
+        if (!this._sender.isClosed()) {
+            await this._sender.close();
+        }
+        if (!this._receiver.isClosed()) {
+            await this._receiver.close();
+        }
     }
 }
