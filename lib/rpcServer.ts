@@ -1,4 +1,4 @@
-import { Connection, EventContext, Receiver, Message, ReceiverOptions, SenderOptions, ReceiverEvents, SenderEvents, types, generate_uuid } from "rhea-promise";
+import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, Sender } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv from "ajv";
 import {
@@ -8,8 +8,9 @@ import {
 import { parseNodeAddress } from './util';
 
 export class RpcServer {
-    private _connection: Connection;
     private _receiver!: Receiver;
+    private _sender!: Sender;
+    private _session: Session;
     private _amqpNode: string = '';
     private _serverFunctions = new Map<string, {
         callback: Function,
@@ -24,9 +25,8 @@ export class RpcServer {
     private _receiverName = `${generate_uuid()}-${this._amqpNode}-receiver-server`;
     private _senderName = `${generate_uuid()}-${this._amqpNode}-sender-server`;
 
-    constructor(amqpNode: string, connection: Connection, options?: ServerOptions) {
+    constructor(amqpNode: string, session: Session, options?: ServerOptions) {
         this._amqpNode = amqpNode;
-        this._connection = connection;
         this._ajv = new Ajv({
             schemaId: 'auto',
             allErrors: true,
@@ -37,6 +37,7 @@ export class RpcServer {
             useDefaults: false
         });
         this._options = options;
+        this._session = session;
     }
 
     private async _processRequest(context: EventContext) {
@@ -159,32 +160,7 @@ export class RpcServer {
                 subject: this._subject,
                 ttl: 10000
             };
-            const _senderOptions: SenderOptions = {
-                target: {},
-                source: {
-                    dynamic: true,
-                    address: this._amqpNode
-                },
-                name: this._senderName,
-                onSessionError: (context: EventContext) => {
-                    const error = context.session && context.session.error;
-                    (error as any).code = `${this._senderName}-SessionError`;
-                    throw error;
-                }
-            };
-            let _sender = await this._connection.createSender(_senderOptions);
-            _sender.on(SenderEvents.senderError, (context: EventContext) => {
-                const error = context.sender && context.sender.error;
-                (error as any).code = `${this._senderName}-SenderError`;
-                throw error;
-            });
-            if (!_sender.isOpen()) {
-                _sender = await this._connection.createSender(_senderOptions);
-            }
-            _sender.send(_resMessage);
-            if (!_sender.isClosed()) {
-                await _sender.close();
-            }
+            this._sender.send(_resMessage);
         }
     }
 
@@ -252,8 +228,10 @@ export class RpcServer {
     }
 
     public async connect() {
+        this._receiverName = `${this._receiverName}-${this._amqpNode}`;
+        this._senderName = `${this._senderName}-${this._amqpNode}`;
         const nodeAddress = parseNodeAddress(this._amqpNode);
-        const _receiverOptions: ReceiverOptions = typeof this._options !== 'undefined' && this._options !== null
+        const _receiverOptions: ReceiverOptionsWithSession = typeof this._options !== 'undefined' && this._options !== null
             && typeof this._options.receiverOptions !== 'undefined' && this._options.receiverOptions !== null
             && Object.keys(this._options.receiverOptions).length > 0
             ? this._options.receiverOptions
@@ -274,10 +252,10 @@ export class RpcServer {
             const error = context.session && context.session.error;
             (error as any).code = `${this._receiverName}-SessionError`;
             throw error;
-        }
-        this._receiver = await this._connection.createReceiver(_receiverOptions);
+        };
+        this._receiver = await this._session.createReceiver(_receiverOptions);
         if (!this._receiver.isOpen()) {
-            this._receiver = await this._connection.createReceiver(_receiverOptions);
+            this._receiver = await this._session.createReceiver(_receiverOptions);
         }
         this._receiver.on(ReceiverEvents.message, this._processRequest.bind(this));
         this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
@@ -285,9 +263,39 @@ export class RpcServer {
             (error as any).code = `${this._receiverName}-receiverError`;
             throw error;
         });
+
+        const _senderOptions: SenderOptionsWithSession = {
+            target: {},
+            source: {
+                dynamic: true,
+                address: this._amqpNode
+            },
+            name: this._senderName,
+            session: this._session,
+            onSessionError: (context: EventContext) => {
+                const error = context.session && context.session.error;
+                (error as any).code = `${this._senderName}-SessionError`;
+                throw error;
+            },
+            onError: (context: EventContext) => {
+                debugger;
+                const error = context.sender && context.sender.error;
+                (error as any).code = `${this._senderName}-SenderError`;
+                throw error;
+            }
+        };
+        this._sender = await this._session.createSender(_senderOptions);
+        if (!this._sender.isOpen()) {
+            this._sender = await this._session.createSender(_senderOptions);
+        }
     }
 
     public async disconnect() {
-        await this._receiver.close();
+        if (!this._sender.isClosed()) {
+            this._sender.close();
+        }
+        if (!this._receiver.isClosed()) {
+            await this._receiver.close();
+        }
     }
 }
