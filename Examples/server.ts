@@ -50,8 +50,6 @@ async function Main() {
     await bindFunctions(_rpcServer);
     const _rpcServerWithSubject = await _client.createRpcServer('amq.topic/test');
     await bindFunctions(_rpcServerWithSubject);
-    await _client.disconnectServer('amq.topic');
-    await _client.disconnectServer('amq.topic/test');
 }
 
 Main()

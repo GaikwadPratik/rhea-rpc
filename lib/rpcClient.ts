@@ -174,12 +174,12 @@ export class RpcClient {
         });
     }
 
-    public async disconnect() {
-        if (!this._sender.isClosed()) {
-            await this._sender.close();
-        }
-        if (!this._receiver.isClosed()) {
-            await this._receiver.close();
-        }
-    }
+    // public async disconnect() {
+    //     if (!this._sender.isClosed()) {
+    //         await this._sender.close();
+    //     }
+    //     if (!this._receiver.isClosed()) {
+    //         await this._receiver.close();
+    //     }
+    // }
 }

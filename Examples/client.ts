@@ -14,7 +14,7 @@ async function Main() {
     console.log(await _rpcClient.call('simpleParams', ['123', '456']));
     _rpcClient = await _client.createRpcClient('amq.topic');
     console.log(await _rpcClient.call('noParams'));
-    await _client.disconnectClient('amq.topic');
+    //await _client.disconnectClient('amq.topic');
 
     let _rpcClientWithSubject = await _client.createRpcClient('amq.topic/test');
     console.log(await _rpcClientWithSubject.call('namedParams', { firstName: '123', lastName: '456' }));
@@ -22,7 +22,7 @@ async function Main() {
     console.log(await _rpcClientWithSubject.call('simpleParams', ['123', '456']));
     _rpcClientWithSubject = await _client.createRpcClient('amq.topic/test');
     console.log(await _rpcClientWithSubject.call('noParams'));
-    await _client.disconnectClient('amq.topic/test');
+    //await _client.disconnectClient('amq.topic/test');
 }
 
 Main()
