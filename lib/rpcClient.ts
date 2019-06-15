@@ -1,4 +1,4 @@
-import { EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, Session } from "rhea-promise";
+import { EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, Session, SenderEvents } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
 import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors';
 import { parseNodeAddress } from './util';
@@ -142,17 +142,17 @@ export class RpcClient {
                 const error = context.session && context.session.error;
                 (error as any).code = `${this._receiverName}-SessionError`;
                 throw error;
-            },
-            onError: (context: EventContext) => {
-                const error = context.receiver && context.receiver.error;
-                (error as any).code = `${this._receiverName}-receiverError`;
-                throw error;
-            }
+            } 
         };
         this._receiver = await this._session.createReceiver(_receiverOptions);
         if (!this._receiver.isOpen()) {
             this._receiver = await this._session.createReceiver(_receiverOptions);
         }
+        this._receiver.on(ReceiverEvents.receiverError, (context: EventContext) => {
+            const error = context.receiver && context.receiver.error;
+            (error as any).code = `${this._receiverName}-receiverError`;
+            throw error;
+        });
         this._receiver.on(ReceiverEvents.message, this._processResponse.bind(this));
         const _senderOptions: SenderOptionsWithSession = {
             target: {},
@@ -161,17 +161,17 @@ export class RpcClient {
                 const error = context.session && context.session.error;
                 (error as any).code = `${this._senderName}-SessionError`;
                 throw error;
-            },
-            onError: (context: EventContext) => {
-                const error = context.sender && context.sender.error;
-                (error as any).code = `${this._senderName}-SenderError`;
-                throw error;
             }
         };
         this._sender = await this._session.createSender(_senderOptions);
         if (!this._sender.isOpen()) {
             this._sender = await this._session.createSender(_senderOptions);
         }
+        this._sender.on(SenderEvents.senderError, (context: EventContext) => {
+            const error = context.sender && context.sender.error;
+            (error as any).code = `${this._senderName}-SenderError`;
+            throw error;
+        });
     }
 
     public async disconnect() {

@@ -1,4 +1,4 @@
-import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, Sender } from "rhea-promise";
+import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, Sender, SenderEvents } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv from "ajv";
 import {
@@ -276,17 +276,17 @@ export class RpcServer {
                 const error = context.session && context.session.error;
                 (error as any).code = `${this._senderName}-SessionError`;
                 throw error;
-            },
-            onError: (context: EventContext) => {
-                const error = context.sender && context.sender.error;
-                (error as any).code = `${this._senderName}-SenderError`;
-                throw error;
             }
         };
         this._sender = await this._session.createSender(_senderOptions);
         if (!this._sender.isOpen()) {
             this._sender = await this._session.createSender(_senderOptions);
         }
+        this._sender.on(SenderEvents.senderError, (context: EventContext) => {
+            const error = context.sender && context.sender.error;
+            (error as any).code = `${this._senderName}-SenderError`;
+            throw error;
+        });
     }
 
     public async disconnect() {
