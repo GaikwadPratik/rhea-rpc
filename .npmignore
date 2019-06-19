@@ -3,3 +3,4 @@ index.ts
 tsconfig.json
 .vscode/launch.json
 Examples
+dist/Examples
