@@ -1,4 +1,4 @@
-import { EventContext, Receiver, Sender, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, Session, SenderEvents } from "rhea-promise";
+import { EventContext, Receiver, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, Session, SenderEvents, AwaitableSender } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
 import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors';
 import { parseNodeAddress } from './util';
@@ -11,7 +11,7 @@ interface PendingRequest {
 }
 
 export class RpcClient {
-    private _sender!: Sender;
+    private _sender!: AwaitableSender;
     private _receiver!: Receiver;
     private _session: Session;
     private _amqpNode: string = '';
@@ -54,7 +54,7 @@ export class RpcClient {
             ttl: this._messageOptions.timeout
         }
         if (request.type === RpcRequestType.Call) {
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
                 this._requestPendingResponse[request.id] = {
                     timeout: setTimeout(() => {
                         if (this._requestPendingResponse.hasOwnProperty(request.id)) {
@@ -65,10 +65,14 @@ export class RpcClient {
                     }, this._messageOptions.timeout),
                     response: { resolve, reject }
                 }
-                this._sender.send(_message);
+                try {
+                    await this._sender.send(_message);
+                } catch (err) {
+                    return reject(err);
+                }
             });
         } else {
-            this._sender.send(_message);
+            await this._sender.send(_message);
             return;
         }
     }
@@ -142,7 +146,7 @@ export class RpcClient {
                 const error = context.session && context.session.error;
                 (error as any).code = `${this._receiverName}-SessionError`;
                 throw error;
-            } 
+            }
         };
         this._receiver = await this._session.createReceiver(_receiverOptions);
         if (!this._receiver.isOpen()) {
@@ -163,9 +167,9 @@ export class RpcClient {
                 throw error;
             }
         };
-        this._sender = await this._session.createSender(_senderOptions);
+        this._sender = await this._session.createAwaitableSender(_senderOptions);
         if (!this._sender.isOpen()) {
-            this._sender = await this._session.createSender(_senderOptions);
+            this._sender = await this._session.createAwaitableSender(_senderOptions);
         }
         this._sender.on(SenderEvents.senderError, (context: EventContext) => {
             const error = context.sender && context.sender.error;
@@ -174,12 +178,12 @@ export class RpcClient {
         });
     }
 
-    // public async disconnect() {
-    //     if (!this._sender.isClosed()) {
-    //         await this._sender.close();
-    //     }
-    //     if (!this._receiver.isClosed()) {
-    //         await this._receiver.close();
-    //     }
-    // }
+    public async close(closeSession = false) {
+        if (!this._sender.isClosed()) {
+            await this._sender.close({ closeSession });
+        }
+        if (!this._receiver.isClosed()) {
+            await this._receiver.close({ closeSession });
+        }
+    }
 }

@@ -1,4 +1,4 @@
-import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, Sender, SenderEvents } from "rhea-promise";
+import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, SenderEvents, AwaitableSender } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv from "ajv";
 import {
@@ -9,7 +9,7 @@ import { parseNodeAddress } from './util';
 
 export class RpcServer {
     private _receiver!: Receiver;
-    private _sender!: Sender;
+    private _sender!: AwaitableSender;
     private _session: Session;
     private _amqpNode: string = '';
     private _serverFunctions = new Map<string, {
@@ -160,7 +160,7 @@ export class RpcServer {
                 subject: this._subject,
                 ttl: 10000
             };
-            this._sender.send(_resMessage);
+            await this._sender.send(_resMessage);
         }
     }
 
@@ -278,9 +278,9 @@ export class RpcServer {
                 throw error;
             }
         };
-        this._sender = await this._session.createSender(_senderOptions);
+        this._sender = await this._session.createAwaitableSender(_senderOptions);
         if (!this._sender.isOpen()) {
-            this._sender = await this._session.createSender(_senderOptions);
+            this._sender = await this._session.createAwaitableSender(_senderOptions);
         }
         this._sender.on(SenderEvents.senderError, (context: EventContext) => {
             const error = context.sender && context.sender.error;
@@ -289,12 +289,12 @@ export class RpcServer {
         });
     }
 
-    // public async disconnect() {
-    //     if (!this._sender.isClosed()) {
-    //         await this._sender.close();
-    //     }
-    //     if (!this._receiver.isClosed()) {
-    //         await this._receiver.close();
-    //     }
-    // }
+    public async close(closeSession = false) {
+        if (!this._sender.isClosed()) {
+            await this._sender.close({ closeSession });
+        }
+        if (!this._receiver.isClosed()) {
+            await this._receiver.close({ closeSession });
+        }
+    }
 }
