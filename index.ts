@@ -63,19 +63,19 @@ export class RheaRpc {
         return _rpcServer;
     }
 
-    // public async disconnectClient(amqpNode: string) {
-    //     if (this._clientMap.has(amqpNode) && typeof this._clientMap.get(amqpNode) !== 'undefined' && this._clientMap.get(amqpNode) !== null) {
-    //         const _rpcClient = this._clientMap.get(amqpNode)!;
-    //         await _rpcClient.disconnect();
-    //     }
-    //     this._clientMap.delete(amqpNode);
-    // }
+    public async closeClient(amqpNode: string) {
+        if (this._clientMap.has(amqpNode) && typeof this._clientMap.get(amqpNode) !== 'undefined' && this._clientMap.get(amqpNode) !== null) {
+            const _rpcClient = this._clientMap.get(amqpNode)!;
+            await _rpcClient.close();
+        }
+        this._clientMap.delete(amqpNode);
+    }
 
-    // public async disconnectServer(amqpNode: string) {
-    //     if (this._serverMap.has(amqpNode) && typeof this._serverMap.get(amqpNode) !== 'undefined' && this._serverMap.get(amqpNode) !== null) {
-    //         const _rpcServer = this._serverMap.get(amqpNode)!;
-    //         await _rpcServer.disconnect();
-    //     }
-    //     this._serverMap.delete(amqpNode);
-    // }
+    public async closeServer(amqpNode: string) {
+        if (this._serverMap.has(amqpNode) && typeof this._serverMap.get(amqpNode) !== 'undefined' && this._serverMap.get(amqpNode) !== null) {
+            const _rpcServer = this._serverMap.get(amqpNode)!;
+            await _rpcServer.close();
+        }
+        this._serverMap.delete(amqpNode);
+    }
 }
