@@ -39,7 +39,7 @@ export class RpcClient {
         this._session = session;
     }
 
-    private async _sendRequest(request: PendingRequest) {
+    private async _sendRequest(request: PendingRequest): Promise<{} | void> {
         const _message: Message = {
             to: this._amqpNode,
             reply_to: request.type === RpcRequestType.Call ? this._receiver.address : '',
