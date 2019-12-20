@@ -187,7 +187,7 @@ export class RpcServer {
             throw new AmqpRpcMissingFunctionNameError('Function name is missing from definition');
         }
 
-        if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.hasOwnProperty(functionDefintion.method)) {
+        if (typeof this._serverFunctions !== 'undefined' && this._serverFunctions !== null && this._serverFunctions.has(functionDefintion.method)) {
             throw new AmqpRpcDuplicateFunctionDefinitionError(`${functionDefintion.method} is already bound to RPC server`);
         }
 
