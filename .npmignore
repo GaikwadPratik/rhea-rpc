@@ -4,3 +4,4 @@ tsconfig.json
 .vscode/launch.json
 Examples
 dist/Examples
+.DS_Store
