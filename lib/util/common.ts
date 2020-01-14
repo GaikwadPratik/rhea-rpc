@@ -4,7 +4,6 @@ export interface MessageOptions {
 }
 
 export interface ServerOptions {
-    interceptor?(delivery: Delivery, requestMessage: any): Promise<boolean>,
     receiverOptions?: ReceiverOptions
 }
 
@@ -25,7 +24,8 @@ export interface ServerFunctionDefinition {
         type: string,
         properties: any,
         required?: Array<string>
-    }
+    },
+    interceptor?(delivery: Delivery, requestMessage: any): Promise<boolean>
 }
 
 export enum ErrorCodes {

@@ -1,4 +1,4 @@
-import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, SenderEvents, AwaitableSender } from "rhea-promise";
+import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, SenderEvents, AwaitableSender, Delivery } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv from "ajv";
 import {
@@ -15,7 +15,8 @@ export class RpcServer {
     private _serverFunctions = new Map<string, {
         callback: Function,
         validate: Ajv.ValidateFunction,
-        arguments: any
+        arguments: any,
+        interceptor?(delivery: Delivery, requestMessage: any): Promise<boolean>
     }>();
     private _ajv: Ajv.Ajv;
     private readonly STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
@@ -72,18 +73,20 @@ export class RpcServer {
             _reqMessage.body.type = RpcRequestType.Obsolete;
         }
 
-        if (typeof this._options !== 'undefined' && this._options !== null && typeof this._options.interceptor === 'function') {
-            const proceed = await this._options.interceptor(context.delivery!, _reqMessage.body);
-            if (proceed === false) {
-                return;
-            }
-        }
-
         if (!this._serverFunctions.has(_reqMessage.body.method)) {
+            context.delivery!.accept();
             return await this._sendResponse(_replyTo, _correlationId as string, new AmqpRpcUnknownFunctionError(`${_reqMessage.body.method} not bound to server`), _reqMessage.body.type);
         }
 
         const funcCall = this._serverFunctions.get(_reqMessage.body.method)!;
+        if (typeof funcCall.interceptor === 'function') {
+            const proceed = await funcCall.interceptor(context.delivery!, _reqMessage.body);
+            if (proceed === false) {
+                return;
+            }
+        }
+        context.delivery!.accept();
+
         let params = _reqMessage.body.params,
             overWriteArgs = false;
 
@@ -223,7 +226,8 @@ export class RpcServer {
         this._serverFunctions.set(functionDefintion.method, {
             callback,
             validate: _validate!,
-            arguments: _funcDefinedParams
+            arguments: _funcDefinedParams,
+            interceptor: typeof functionDefintion.interceptor === 'function' ? functionDefintion.interceptor : undefined
         });
     }
 
@@ -248,6 +252,7 @@ export class RpcServer {
             };
         }
         _receiverOptions.name = this._receiverName;
+        _receiverOptions.autoaccept = false;
         _receiverOptions.onSessionError = (context: EventContext) => {
             const error = context.session && context.session.error;
             (error as any).code = `${this._receiverName}-SessionError`;
