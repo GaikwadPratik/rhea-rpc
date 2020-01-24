@@ -88,7 +88,7 @@ export class RpcClient {
 
         const id = context.message!.correlation_id as string;
         if (typeof this._requestPendingResponse[id] === 'undefined' || this._requestPendingResponse[id] === null) {
-            console.log(`No pending response for ${id}`);
+            //console.log(`No pending response for ${id}`);
             return;
         }
         const callback = this._requestPendingResponse[id].response;
