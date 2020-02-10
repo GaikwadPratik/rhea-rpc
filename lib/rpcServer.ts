@@ -119,7 +119,7 @@ export class RpcServer {
         try {
             let _response: any;
             if (!overWriteArgs) {
-                const args = funcCall.arguments.map(function (p: any) { return params[p]; });
+                const args = funcCall.arguments.map(function (p: any) { return (typeof params[p] !== 'undefined' && params[p] !== null) ? params[p] : null; });
                 _response = await funcCall.callback.apply(null, args);
             } else {
                 _response = await funcCall.callback.call(null, params);
