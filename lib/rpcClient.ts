@@ -31,6 +31,10 @@ export class RpcClient {
     private _senderName = `${generate_uuid()}-${this._amqpNode}-sender-client`;
     private _receiverName = `${generate_uuid()}-${this._amqpNode}-receiver-client`;
 
+    public set ClientOpts(value: MessageOptions) {
+        this._messageOptions = value;
+    }
+
     constructor(amqpNode: string, session: Session, options?: MessageOptions) {
         this._amqpNode = amqpNode;
         if (typeof options !== 'undefined' && options !== null) {

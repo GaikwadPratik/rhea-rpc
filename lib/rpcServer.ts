@@ -21,10 +21,14 @@ export class RpcServer {
     private _ajv: Ajv.Ajv;
     private readonly STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
     private readonly ARGUMENT_NAMES = /([^\s,{}]+)/mg;
-    private readonly _options!: ServerOptions | undefined;
+    private _options!: ServerOptions | undefined;
     private _subject = '';
     private _receiverName = `${generate_uuid()}-${this._amqpNode}-receiver-server`;
     private _senderName = `${generate_uuid()}-${this._amqpNode}-sender-server`;
+    
+    public set ServerOpts(value: ServerOptions) {
+        this._options = value;
+    }
 
     constructor(amqpNode: string, session: Session, options?: ServerOptions) {
         this._amqpNode = amqpNode;

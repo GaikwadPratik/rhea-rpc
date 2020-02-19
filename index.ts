@@ -12,7 +12,7 @@ export class RheaRpc {
     private _connection: Connection | null = null;
     private _clientMap = new Map<string, RpcClient>();
     private _serverMap = new Map<string, RpcServer>();
-    private _session: Session| null  = null;
+    private _session: Session | null = null;
 
     public async createAmqpClient(connectionOptions?: ConnectionOptions, connection?: Connection): Promise<RheaRpc> {
         if (typeof connection !== 'undefined' && connection !== null) {
@@ -40,7 +40,11 @@ export class RheaRpc {
             await _rpcClient.connect();
             this._clientMap.set(amqpNode, _rpcClient);
         } else {
-            _rpcClient = this._clientMap.get(amqpNode)!;
+            const _originalClient = this._clientMap.get(amqpNode)!;
+            _rpcClient = Object.assign(Object.create(Object.getPrototypeOf(_originalClient)), _originalClient);
+            if (typeof options !== 'undefined' && options !== null) {
+                _rpcClient.ClientOpts = options;
+            }
         }
         return _rpcClient;
     }
@@ -58,7 +62,11 @@ export class RheaRpc {
             await _rpcServer.connect();
             this._serverMap.set(amqpNode, _rpcServer);
         } else {
-            _rpcServer = this._serverMap.get(amqpNode)!;
+            const _originalServer = this._serverMap.get(amqpNode)!;
+            _rpcServer = Object.assign(Object.create(Object.getPrototypeOf(_originalServer)), _originalServer);
+            if (typeof options !== 'undefined' && options !== null) {
+                _rpcServer.ServerOpts = options;
+            }
         }
         return _rpcServer;
     }
