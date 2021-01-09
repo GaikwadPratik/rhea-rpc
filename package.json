@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "preinstall": "npm uninstall rhea-rpc --no-save"
   },
   "author": "Pratik Gaikwad",
   "license": "MIT",
