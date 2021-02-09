@@ -41,9 +41,7 @@ async function bindFunctions(server: RpcServer) {
 async function Main() {
     let _client = new RheaRpc();
     let _connectionOptions: ConnectionOptions = {
-        host: '',
-        username: '',
-        password: ''
+        host: 'localhost'
     };
     _client = await _client.createAmqpClient(_connectionOptions);
     const _rpcServer  = await _client.createRpcServer('amq.topic');
