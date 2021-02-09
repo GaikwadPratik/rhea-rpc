@@ -1,0 +1,30 @@
+{
+  "name": "rhea-rpc",
+  "context": "..",
+  "dockerFile": "../test/testContainer/Dockerfile",
+  "postStartCommand": "/usr/bin/testenv.sh",
+  "extensions": [
+      "abumalick.vscode-nvm",
+      "christian-kohler.npm-intellisense",
+      "dawidd6.debian-vscode",
+      "dbaeumer.vscode-eslint",
+      "DotJoshJohnson.xml",
+      "EditorConfig.EditorConfig",
+      "eg2.vscode-npm-script",
+      "kisstkondoros.vscode-codemetrics",
+      "mads-hartmann.bash-ide-vscode",
+      "miclo.sort-typescript-imports",
+      "ms-vscode.typescript-javascript-grammar",
+      "nodesource.vscode-for-node-js-development-pack",
+      "pmneo.tsimporter",
+      "redhat.vscode-yaml",
+      "VisualStudioExptTeam.vscodeintellicode",
+      "wayou.vscode-todo-highlight",
+      "wix.vscode-import-cost",
+      "eamodio.gitlens"
+  ],
+  "containerEnv": {
+      "NODE_ENV" : "Test",
+      "SERVER": "localhost"
+  }
+}
