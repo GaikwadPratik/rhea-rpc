@@ -1,6 +1,6 @@
 import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, SenderEvents, AwaitableSender, Delivery } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
-import Ajv from "ajv";
+import Ajv, { ValidateFunction } from "ajv";
 import {
     AmqpRpcUnknownFunctionError, AmqpRpcFunctionDefinitionValidationError, AmqpRpcMissingFunctionDefinitionError, AmqpRpcMissingFunctionNameError,
     AmqpRpcDuplicateFunctionDefinitionError, AmqpRpcParamsNotObjectError, AmqpRpcParamsMissingPropertiesError, AmqpRpcUnknowParameterError
@@ -14,11 +14,11 @@ export class RpcServer {
     private _amqpNode: string = '';
     private _serverFunctions = new Map<string, {
         callback: Function,
-        validate: Ajv.ValidateFunction,
+        validate: ValidateFunction,
         arguments: any,
         interceptor?(delivery: Delivery, requestMessage: any): Promise<boolean>
     }>();
-    private _ajv: Ajv.Ajv;
+    private _ajv: Ajv;
     private readonly STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
     private readonly ARGUMENT_NAMES = /([^\s,{}]+)/mg;
     private _options!: ServerOptions | undefined;
@@ -33,7 +33,6 @@ export class RpcServer {
     constructor(amqpNode: string, session: Session, options?: ServerOptions) {
         this._amqpNode = amqpNode;
         this._ajv = new Ajv({
-            schemaId: 'auto',
             allErrors: true,
             coerceTypes: false,
             removeAdditional: true,
@@ -200,7 +199,7 @@ export class RpcServer {
 
         let _funcDefParams = null,
             _funcDefinedParams: RegExpMatchArray | null = null,
-            _validate: Ajv.ValidateFunction | null = null;
+            _validate: ValidateFunction | null = null;
 
         if (typeof functionDefintion.params !== 'undefined' && functionDefintion.params !== null) {
             _funcDefParams = functionDefintion.params;
