@@ -22,7 +22,7 @@ RUN apt-get update \
               libudev-dev \
               libpam0g-dev \
     && add-apt-repository ppa:hio/appliance \
-    && curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+    && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
     && apt-get update \
     && apt-get -y install \
                   nodejs \
@@ -36,6 +36,9 @@ RUN apt-get update \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
     && chsh -s /bin/bash 
 
+SHELL ["/bin/bash", "-c"]
+RUN echo "source /usr/share/bash-completion/completions/git" >> ~/.bashrc
+RUN source ~/.bashrc
 
   # hivesetup
 RUN mkdir -p /var/lib/qpidd \
@@ -50,9 +53,10 @@ ENV LC_ALL=en_US.UTF-8 \
 
 USER root
 
-COPY ["test/testContainer/testenv.sh","/usr/bin/testenv.sh"]
+COPY [".devcontainer/testenv.sh","/usr/bin/testenv.sh"]
 RUN rm -rf node_modules
 COPY . .
+RUN npm install -g npm
 RUN npm install -g node-gyp bunyan
 RUN npm install
 RUN npm run build

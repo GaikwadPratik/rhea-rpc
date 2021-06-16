@@ -1,7 +1,7 @@
 {
   "name": "rhea-rpc",
   "context": "..",
-  "dockerFile": "../test/testContainer/Dockerfile",
+  "dockerFile": "./Dockerfile",
   "postStartCommand": "/usr/bin/testenv.sh",
   "extensions": [
       "abumalick.vscode-nvm",
@@ -26,5 +26,8 @@
   "containerEnv": {
       "NODE_ENV" : "Test",
       "SERVER": "localhost"
-  }
+  },
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/root/.ssh,type=bind,consistency=cached"
+  ]
 }
