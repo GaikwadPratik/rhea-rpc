@@ -8,7 +8,10 @@
     "build": "./node_modules/.bin/tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepack": "npm run build",
-    "preinstall": "npm uninstall rhea-rpc --no-save"
+    "preinstall": "npm uninstall rhea-rpc --no-save",
+    "major-release": "release-it -c .release-it.json -n -i major",
+    "minor-release": "release-it -c .release-it.json -n -i minor",
+    "patch-release": "release-it -c .release-it.json -n -i patch"
   },
   "author": "Pratik Gaikwad",
   "license": "MIT",
@@ -36,6 +39,7 @@
   "dependencies": {
     "ajv": "^8.6.0",
     "debug": "^4.3.1",
+    "release-it": "^14.9.0",
     "rhea-promise": "^2.0.0",
     "source-map-support": "^0.5.19"
   },

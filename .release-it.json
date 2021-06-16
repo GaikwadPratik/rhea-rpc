@@ -1,0 +1,24 @@
+{
+  "scripts": {
+    "after:bump": "npm run changelog"
+  },
+  "git": {
+    "requireCleanWorkingDir": true,
+    "requireUpstream": false,
+    "commit": true,
+    "commitMessage": "chore(release): release version ${version}",
+    "tag": true,
+    "tagName": "v${version}",
+    "tagAnnotation": "Release ${version}",
+    "push": true
+  },
+  "npm": {
+    "publish": false
+  },
+  "github": {
+    "release": false
+  },
+  "gitlab": {
+    "release": false
+  }
+}
