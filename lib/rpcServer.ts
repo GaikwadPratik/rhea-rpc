@@ -1,4 +1,4 @@
-import { EventContext, Receiver, Message, ReceiverOptionsWithSession, SenderOptionsWithSession, ReceiverEvents, types, generate_uuid, Session, SenderEvents, AwaitableSender, Delivery } from "rhea-promise";
+import { EventContext, Receiver, Message, CreateReceiverOptions, CreateSenderOptions, ReceiverEvents, types, generate_uuid, Session, SenderEvents, AwaitableSender, Delivery } from "rhea-promise";
 import { RpcRequestType, ServerFunctionDefinition, RpcResponseCode, ServerOptions } from "./util/common";
 import Ajv, { ValidateFunction } from "ajv";
 import {
@@ -238,7 +238,7 @@ export class RpcServer {
         this._receiverName = `${this._receiverName}-${this._amqpNode}`;
         this._senderName = `${this._senderName}-${this._amqpNode}`;
         const nodeAddress = parseNodeAddress(this._amqpNode);
-        const _receiverOptions: ReceiverOptionsWithSession = typeof this._options !== 'undefined' && this._options !== null
+        const _receiverOptions: CreateReceiverOptions = typeof this._options !== 'undefined' && this._options !== null
             && typeof this._options.receiverOptions !== 'undefined' && this._options.receiverOptions !== null
             && Object.keys(this._options.receiverOptions).length > 0
             ? this._options.receiverOptions
@@ -272,7 +272,7 @@ export class RpcServer {
             throw error;
         });
 
-        const _senderOptions: SenderOptionsWithSession = {
+        const _senderOptions: CreateSenderOptions = {
             target: {},
             source: {
                 dynamic: true,

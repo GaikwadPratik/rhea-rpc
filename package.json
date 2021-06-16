@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "./node_modules/.bin/tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepack": "npm run build",
     "preinstall": "npm uninstall rhea-rpc --no-save"
@@ -34,21 +34,18 @@
   },
   "homepage": "https://github.com/GaikwadPratik/rhea-rpc#readme",
   "dependencies": {
-    "ajv": "^7.0.4",
+    "ajv": "^8.6.0",
     "debug": "^4.3.1",
-    "rhea-promise": "^1.1.0",
+    "rhea-promise": "^2.0.0",
     "source-map-support": "^0.5.19"
   },
   "devDependencies": {
     "@types/debug": "^4.1.5",
-    "@types/node": "^14.14.25",
+    "@types/node": "^15.12.2",
     "@types/source-map-support": "^0.5.3",
-    "chai": "^4.3.0",
-    "chai-as-promised": "^7.1.1",
-    "husky": "^5.0.9",
-    "mocha": "^8.2.1",
-    "tslib": "^2.1.0",
-    "typescript": "^4.1.3"
+    "husky": "^6.0.0",
+    "tslib": "^2.3.0",
+    "typescript": "^4.3.2"
   },
   "husky": {
     "hooks": {

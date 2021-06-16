@@ -1,4 +1,4 @@
-import { EventContext, Receiver, generate_uuid, Message, ReceiverEvents, SenderOptionsWithSession, ReceiverOptionsWithSession, Session, SenderEvents, AwaitableSender } from "rhea-promise";
+import { EventContext, Receiver, generate_uuid, Message, ReceiverEvents, CreateSenderOptions, CreateReceiverOptions, Session, SenderEvents, AwaitableSender } from "rhea-promise";
 import { MessageOptions, RpcRequestType, RpcResponseCode, ErrorCodes } from "./util/common";
 import { AmqpRpcRequestTimeoutError, AmqpRpcResponseError } from './util/errors';
 import { parseNodeAddress } from './util';
@@ -140,7 +140,7 @@ export class RpcClient {
         if (nodeAddress.subject.length > 0) {
             this._subject = nodeAddress.subject;
         }
-        const _receiverOptions: ReceiverOptionsWithSession = {
+        const _receiverOptions: CreateReceiverOptions = {
             source: {
                 dynamic: true,
                 address: nodeAddress.address
@@ -162,7 +162,7 @@ export class RpcClient {
             throw error;
         });
         this._receiver.on(ReceiverEvents.message, this._processResponse.bind(this));
-        const _senderOptions: SenderOptionsWithSession = {
+        const _senderOptions: CreateSenderOptions = {
             target: {},
             name: this._senderName,
             onSessionError: (context: EventContext) => {
