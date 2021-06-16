@@ -1,7 +1,4 @@
 {
-  "scripts": {
-    "after:bump": "npm run changelog"
-  },
   "git": {
     "requireCleanWorkingDir": true,
     "requireUpstream": false,
